@@ -17,7 +17,8 @@ instalar. Los datos compartidos y el login los pone Supabase.
 index.html            la aplicación entera (HTML + CSS + JS)
 config.js             tus dos valores de Supabase  ← lo único que editás
 supabase/setup.sql    tablas, permisos y realtime, para pegar una sola vez
-netlify.toml          publica la carpeta tal cual
+netlify.toml          publica la carpeta tal cual, en Netlify
+vercel.json           lo mismo, en Vercel: cada uno lee solo el suyo
 ```
 
 ---
