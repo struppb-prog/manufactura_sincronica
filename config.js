@@ -14,5 +14,5 @@
    Si dejás los dos campos vacíos, la página funciona igual
    pero guarda solo en esta computadora, sin login.
    ============================================================ */
-var SUPABASE_URL      = "";
-var SUPABASE_ANON_KEY = "";
+var SUPABASE_URL      = "https://supabase.com/dashboard/project/bqowrafdshlkgaszbyvc";
+var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxb3dyYWZkc2hsa2dhc3pieXZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MTIzODEsImV4cCI6MjEwNDk4ODM4MX0.UZO2RtdQ8WFH6Bq1DqZociCVgLlHC5aaSodkBcv2aa0";
