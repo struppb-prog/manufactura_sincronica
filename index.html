@@ -302,6 +302,25 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
 .cmpnote{font-size:12px;color:var(--ink-3);margin-top:10px}
 .adminfoot{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 
+table.mem{border-collapse:separate;border-spacing:0;width:100%;margin-top:14px;min-width:420px}
+table.mem th, table.mem td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
+table.mem th{font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+table.mem td{font-size:13.5px;color:var(--ink-2)}
+table.mem td.who{font-family:"IBM Plex Mono", monospace;color:var(--ink);word-break:break-all}
+table.mem td.pickcell{width:184px}
+.badge{
+  font-family:"IBM Plex Mono", monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);
+  border-radius:2px;padding:1px 5px;margin-left:7px;white-space:nowrap;
+}
+select.pick{
+  font:inherit;font-size:13.5px;padding:7px 9px;width:100%;
+  border:1px solid var(--line-strong);border-radius:3px;
+  background:var(--surface);color:var(--ink);cursor:pointer;
+}
+select.pick:focus{border-color:var(--accent);outline:none}
+select.pick[disabled]{opacity:.55;cursor:default}
+
 @media (max-width:640px){
   .stats{grid-template-columns:repeat(2, minmax(0,1fr))}
   .stat .v{font-size:26px}
@@ -355,7 +374,7 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
   <header>
     <p class="eyebrow">Teoría de las Restricciones · Unidad 4</p>
     <h1>Línea de mates</h1>
-    <p class="lede">Cinco estaciones en serie, cinco vueltas, un dado por estación. Cada dado promedia <b>3,5</b>, así que la línea “debería” terminar <b>17,5 kits</b> en cinco vueltas. Nunca los termina: cargá los dados y mirá dónde se acumula el inventario.</p>
+    <p class="lede" id="ledeText">Cinco estaciones en serie, cinco vueltas, un dado por estación. Cada dado promedia <b>3,5</b>, así que la línea “debería” terminar <b>17,5 kits</b> en cinco vueltas. Nunca los termina: cargá los dados y mirá dónde se acumula el inventario.</p>
   </header>
 
   <div class="chain" id="chain"></div>
@@ -397,7 +416,14 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
       </div>
     </section>
 
-    <p class="foot">Mismas fórmulas que la planilla original: <code>movidas = MÍN(dado; inventario previo + movidas de la estación anterior)</code>, <code>inventario = inventario previo + entrada − movidas</code>, <code>desviación = movidas − 3,5 + desviación de la vuelta anterior</code>. La estación 1 siempre tiene material, por eso mueve exactamente lo que marca su dado. Al cargar un dado el foco salta a la estación siguiente de la misma vuelta.</p>
+    <section class="card" id="cmpCard" hidden>
+      <h2>Los seis equipos</h2>
+      <p class="sub">Cómo le fue a cada equipo contra los 17,5 kits que promete el promedio. La marca vertical es la producción teórica de las vueltas que ese equipo lleva cargadas.</p>
+      <div class="scroller"><table class="cmp" id="cmpTeam"></table></div>
+      <p class="cmpnote">WIP = unidades frenadas entre estaciones al cierre de la última vuelta cargada.</p>
+    </section>
+
+    <p class="foot" id="footNote">Mismas fórmulas que la planilla original: <code>movidas = MÍN(dado; inventario previo + movidas de la estación anterior)</code>, <code>inventario = inventario previo + entrada − movidas</code>, <code>desviación = movidas − 3,5 + desviación de la vuelta anterior</code>. La estación 1 siempre tiene material, por eso mueve exactamente lo que marca su dado. Al cargar un dado el foco salta a la estación siguiente de la misma vuelta.</p>
   </div>
 
   <div id="adminView" hidden style="display:flex;flex-direction:column;gap:28px">
@@ -405,6 +431,13 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
       <h2>Qué ven los equipos</h2>
       <p class="sub">Los cambios se aplican al instante en todas las computadoras que tengan la página abierta. Vos seguís viendo los números completos acá abajo, aunque los apagues para el curso.</p>
       <div class="switches" id="switches"></div>
+    </section>
+
+    <section class="card">
+      <h2>Quién juega en cada equipo</h2>
+      <p class="sub">Al asignarle un equipo a alguien, esa persona pasa a ver solo la pestaña de su equipo y solo puede cargar dados ahí. Si tiene la página abierta, le cambia en el momento. Sin equipo asignado sigue viendo los seis, como siempre.</p>
+      <div class="scroller"><table class="mem" id="members"></table></div>
+      <p class="cmpnote" id="membersNote"></p>
     </section>
 
     <section class="card">
@@ -460,7 +493,8 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
   for(var q=0;q<6;q++) state.teams.push(blank());
 
   var sb = null, isAdmin = false, syncing = false;
-  var cfg = {stats:true, chart:true, dev:true};
+  var myEmail = "", myTeam = null;   // myTeam: "e1".."e6" o null si no le asignaron ninguno
+  var cfg = {stats:true, chart:true, dev:true, cmp:false, foot:true, lede:true};
   var dirtyUntil = [0,0,0,0,0,0], pushTimer = [null,null,null,null,null,null];
 
   /* ---------- respaldo local ---------- */
@@ -780,7 +814,10 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
   var SWITCHES = [
     {k:"stats", b:"Indicadores", s:"Kits terminados, producción teórica, desviación final e inventario."},
     {k:"chart", b:"Gráfico de desviación", s:"La curva que revela el efecto acumulado antes de tiempo."},
-    {k:"dev",   b:"Fila de desviación",    s:"La última fila de la tabla de cada equipo."}
+    {k:"dev",   b:"Fila de desviación",    s:"La última fila de la tabla de cada equipo."},
+    {k:"cmp",   b:"Tabla de los seis equipos", s:"La comparativa entre equipos, que por defecto ves solo vos. Encendela para la discusión."},
+    {k:"foot",  b:"Nota de fórmulas",    s:"El párrafo del pie que explica movidas, inventario y desviación."},
+    {k:"lede",  b:"Bajada del título",   s:"El texto de arriba que ya adelanta los 17,5 kits y que la línea nunca llega."}
   ];
   var swInputs = {};
   var switchesEl = document.getElementById("switches");
@@ -800,7 +837,11 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
     });
   });
 
-  var cmpEl = document.getElementById("cmp");
+  var cmpEl     = document.getElementById("cmp");
+  var cmpTeamEl = document.getElementById("cmpTeam");
+  var cmpCard   = document.getElementById("cmpCard");
+  var footNote  = document.getElementById("footNote");
+  var ledeText  = document.getElementById("ledeText");
   function renderCmp(){
     var rows = TEAM_IDS.map(function(_, i){ return summarize(state.teams[i]); });
     var max = 17.5;
@@ -823,13 +864,98 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
         + '<td>'+(r.done||r.wip ? r.wip : "–")+'</td>'
         + '</tr>';
     });
-    cmpEl.innerHTML = html + '</tbody>';
+    html += '</tbody>';
+    cmpEl.innerHTML = html;
+    cmpTeamEl.innerHTML = html;   // la misma tabla, en el panel del admin y en la vista del curso
   }
+
+  /* La comparativa entre equipos arranca apagada para el curso; el resto,
+     encendido. Por eso cmp se lee al revés que las otras. */
+  function readCfg(row){
+    return {
+      stats: row.stats !== false,
+      chart: row.chart !== false,
+      dev:   row.dev   !== false,
+      cmp:   row.cmp   === true,
+      foot:  row.foot  !== false,
+      lede:  row.lede  !== false
+    };
+  }
+
+  /* ---------- quién juega en cada equipo ---------- */
+  var membersEl   = document.getElementById("members");
+  var membersNote = document.getElementById("membersNote");
+  var memberRows  = [];
+
+  function esc(t){
+    return String(t).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function loadMembers(){
+    if(!sb || !isAdmin) return;
+    sb.from("members").select("email,is_admin,team").order("email").then(function(r){
+      if(r.error){
+        membersNote.textContent = "No se pudo leer la lista: " + r.error.message
+          + ". Revisá que hayas corrido supabase/setup.sql de nuevo.";
+        return;
+      }
+      memberRows = r.data || [];
+      renderMembers();
+    });
+  }
+
+  function renderMembers(){
+    if(!memberRows.length){
+      membersEl.innerHTML = "";
+      membersNote.textContent = "Todavía no hay nadie en la lista del curso.";
+      return;
+    }
+    var html = '<thead><tr><th>Persona</th><th>Equipo</th></tr></thead><tbody>';
+    memberRows.forEach(function(m){
+      var opts = '<option value="">Sin asignar</option>';
+      TEAM_IDS.forEach(function(id, i){
+        opts += '<option value="'+id+'"'+(m.team===id?' selected':'')+'>Equipo '+(i+1)+'</option>';
+      });
+      html += '<tr>'
+        + '<td class="who">'+esc(m.email)+(m.is_admin?' <span class="badge">docente</span>':'')+'</td>'
+        + '<td class="pickcell"><select class="pick" data-email="'+esc(m.email)+'"'
+          + ' aria-label="Equipo de '+esc(m.email)+'">'+opts+'</select></td>'
+        + '</tr>';
+    });
+    membersEl.innerHTML = html + '</tbody>';
+  }
+
+  membersEl.addEventListener("change", function(e){
+    var sel = e.target;
+    if(!sel || !sel.classList || !sel.classList.contains("pick")) return;
+    var email = sel.getAttribute("data-email");
+    var team  = sel.value || null;
+    sel.disabled = true;
+    membersNote.textContent = "Guardando…";
+    sb.from("members").update({team: team}).eq("email", email).then(function(res){
+      sel.disabled = false;
+      if(res && res.error){
+        membersNote.textContent = "No se pudo guardar: " + res.error.message;
+        loadMembers();
+        return;
+      }
+      memberRows.forEach(function(m){ if(m.email === email) m.team = team; });
+      membersNote.textContent = team
+        ? esc(email) + " juega en Equipo " + (TEAM_IDS.indexOf(team)+1)
+          + ". Si tiene la página abierta, se le aplica sin recargar."
+        : esc(email) + " vuelve a ver los seis equipos.";
+    });
+  });
 
   function applyCfg(){
     statsEl.hidden = !cfg.stats;
     chartCard.hidden = !cfg.chart;
     devRow.hidden = !cfg.dev;
+    cmpCard.hidden = !cfg.cmp;
+    footNote.hidden = !cfg.foot;
+    ledeText.hidden = !cfg.lede;
     SWITCHES.forEach(function(d){
       swInputs[d.k].inp.checked = !!cfg[d.k];
       swInputs[d.k].state.textContent = cfg[d.k] ? "Visible" : "Oculto";
@@ -855,7 +981,9 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
   function pushCfg(){
     if(!sb) return;
     sb.from("config")
-      .update({stats:!!cfg.stats, chart:!!cfg.chart, dev:!!cfg.dev, updated_at:new Date().toISOString()})
+      .update({stats:!!cfg.stats, chart:!!cfg.chart, dev:!!cfg.dev,
+               cmp:!!cfg.cmp, foot:!!cfg.foot, lede:!!cfg.lede,
+               updated_at:new Date().toISOString()})
       .eq("id","ui")
       .then(function(res){ if(res && res.error) setSync(false, "No pudiste cambiar la configuración"); });
   }
@@ -887,7 +1015,7 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
     statNodes[3].s.textContent = "unidades frenadas en la línea";
 
     drawChart(m.dev, !anyData(dice));
-    if(isAdmin || state.view === "admin") renderCmp();
+    if(isAdmin || state.view === "admin" || cfg.cmp) renderCmp();
   }
 
   function renderInputs(){
@@ -899,8 +1027,21 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
     });
   }
 
+  /* Si al alumno le asignaron equipo, le queda una sola pestaña y es esa.
+     El docente sigue viendo las seis. El bloqueo de verdad está en la
+     política RLS de teams; esto es para que no se confunda de pestaña. */
+  function applyTeamLock(){
+    var locked = !isAdmin && myTeam !== null;
+    var mine = locked ? TEAM_IDS.indexOf(myTeam) : -1;
+    if(mine >= 0) state.active = mine;
+    tabBtns.forEach(function(b,i){
+      b.hidden = locked && i !== mine;
+    });
+  }
+
   function renderAll(){
     var admin = state.view === "admin";
+    applyTeamLock();
     tabBtns.forEach(function(b,i){
       b.setAttribute("aria-selected", (!admin && i===state.active) ? "true" : "false");
     });
@@ -948,6 +1089,8 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
     setSync(false, "Solo en esta compu");
     adminTab.hidden = false;      // sin backend no hay roles: el panel queda a mano
     isAdmin = true;
+    membersNote.textContent = "Sin Supabase no hay cuentas ni equipos asignados: "
+      + "esta vista es de una sola persona y ve los seis equipos.";
     loadLocal();
     renderAll();
   }
@@ -1035,6 +1178,12 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
     check();
   }
 
+  function showWho(){
+    var i = myTeam ? TEAM_IDS.indexOf(myTeam) : -1;
+    document.getElementById("who").textContent =
+      myEmail + (i >= 0 ? " · Equipo " + (i+1) : "");
+  }
+
   function check(){
     sb.auth.getSession().then(function(res){
       var session = res.data && res.data.session;
@@ -1046,7 +1195,7 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
       }
       var email = (session.user.email || "").toLowerCase();
       msg("Verificando tu acceso…");
-      sb.from("members").select("email,is_admin").eq("email", email).maybeSingle()
+      sb.from("members").select("email,is_admin,team").eq("email", email).maybeSingle()
         .then(function(r){
           if(r.error || !r.data){
             gate.hidden = false;
@@ -1056,12 +1205,15 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
             return;
           }
           isAdmin = !!r.data.is_admin;
-          document.getElementById("who").textContent = email;
+          myEmail = email;
+          myTeam  = r.data.team || null;
+          showWho();
           document.getElementById("signout").hidden = false;
           adminTab.hidden = !isAdmin;
           gate.hidden = true;
           document.getElementById("app").hidden = false;
           msg("");
+          loadMembers();
           loadRemote();
         });
     });
@@ -1080,9 +1232,10 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
       renderAll();
     });
 
-    sb.from("config").select("stats,chart,dev").eq("id","ui").maybeSingle().then(function(r){
-      if(r.data) cfg = {stats: r.data.stats !== false, chart: r.data.chart !== false, dev: r.data.dev !== false};
+    sb.from("config").select("stats,chart,dev,cmp,foot,lede").eq("id","ui").maybeSingle().then(function(r){
+      if(r.data) cfg = readCfg(r.data);
       applyCfg();
+      renderData();
     });
 
     sb.channel("linea-de-mates")
@@ -1094,11 +1247,24 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
         state.teams[i] = normalize(row.dice);
         renderAll();
       })
+      .on("postgres_changes", {event:"*", schema:"public", table:"members"}, function(p){
+        var row = p["new"];
+        if(!row || !row.email) return;
+        if(isAdmin) loadMembers();          // al docente le llegan todas las filas
+        if(String(row.email).toLowerCase() !== myEmail) return;
+        myTeam  = row.team || null;         // lo asignaron o lo soltaron mientras jugaba
+        isAdmin = !!row.is_admin;
+        adminTab.hidden = !isAdmin;
+        if(!isAdmin && state.view === "admin") state.view = "team";
+        showWho();
+        renderAll();
+      })
       .on("postgres_changes", {event:"*", schema:"public", table:"config"}, function(p){
         var row = p["new"];
         if(!row) return;
-        cfg = {stats: row.stats !== false, chart: row.chart !== false, dev: row.dev !== false};
+        cfg = readCfg(row);
         applyCfg();
+        renderData();
       })
       .subscribe(function(status){
         if(status === "SUBSCRIBED") setSync(true, "Sincronizado");
