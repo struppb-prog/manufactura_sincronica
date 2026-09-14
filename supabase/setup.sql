@@ -85,6 +85,14 @@ end $$;
 --    las propias políticas de members.
 -- ------------------------------------------------------------
 
+-- ACCESO ABIERTO: alcanza con haber iniciado sesion, por Google o por
+-- el enlace al mail. La lista de members ya no es una puerta; ahora es
+-- un registro de quien entro, que se llena solo (ver el trigger de mas
+-- abajo) y sirve para asignar equipos y marcar docentes.
+--
+-- Para volver a cerrar el curso a una lista, reemplaza el cuerpo por:
+--   select exists (select 1 from public.members m
+--                  where m.email = lower(auth.jwt() ->> 'email'));
 create or replace function public.is_member()
 returns boolean
 language sql
@@ -92,10 +100,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists (
-    select 1 from public.members m
-    where m.email = lower(auth.jwt() ->> 'email')
-  );
+  select auth.jwt() ->> 'email' is not null;
 $$;
 
 create or replace function public.is_course_admin()
@@ -124,6 +129,41 @@ as $$
   select m.team from public.members m
   where m.email = lower(auth.jwt() ->> 'email');
 $$;
+
+-- ------------------------------------------------------------
+-- 3b. Alta automatica
+--     Cada persona que inicia sesion por primera vez queda
+--     registrada en members. Siempre con is_admin = false: nadie
+--     se vuelve docente por entrar.
+-- ------------------------------------------------------------
+
+create or replace function public.handle_new_member()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.email is not null then
+    insert into public.members (email, is_admin, nota)
+    values (lower(new.email), false, 'alta automatica')
+    on conflict (email) do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_member();
+
+-- Y los que ya se habian logueado antes de este cambio.
+insert into public.members (email, is_admin, nota)
+select lower(u.email), false, 'alta automatica'
+from auth.users u
+where u.email is not null
+on conflict (email) do nothing;
 
 -- ------------------------------------------------------------
 -- 4. Row Level Security
@@ -223,7 +263,14 @@ exception when duplicate_object then null;
 end $$;
 
 -- ============================================================
--- 6. TU LISTA DE GENTE  ← editá esto
+-- 6. QUIÉN ES DOCENTE  ← editá esto
+--
+--    El acceso está ABIERTO: no hace falta cargar a los alumnos.
+--    Cualquiera que entre con Google o con el enlace al mail queda
+--    registrado solo, con is_admin = false.
+--
+--    Lo único que hay que cargar a mano es quién es docente, porque
+--    eso el alta automática nunca lo otorga.
 --
 --    Todos los mails en minúscula.
 --    is_admin = true  → ve la pestaña Admin, oculta estadísticas
@@ -240,10 +287,7 @@ end $$;
 -- ============================================================
 
 insert into public.members (email, is_admin, nota) values
-  ('cambiame@tumail.com', true,  'docente')
-  -- ('alumno1@ejemplo.com', false, 'Equipo 1'),
-  -- ('alumno2@ejemplo.com', false, 'Equipo 1'),
-  -- ('alumno3@ejemplo.com', false, 'Equipo 2'),
+  ('cambiame@tumail.com', true, 'docente')
 on conflict (email) do update
   set is_admin = excluded.is_admin,
       nota     = excluded.nota;
@@ -256,3 +300,7 @@ on conflict (email) do update
 
 -- Para soltar a todos de su equipo y que vuelvan a ver los seis:
 --   update public.members set team = null;
+
+-- Para limpiar el registro entre cursada y cursada (vuelven a darse
+-- de alta solos la próxima vez que entren):
+--   delete from public.members where not is_admin;

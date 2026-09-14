@@ -338,7 +338,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
   <div class="gatecard">
     <p class="eyebrow">Teoría de las Restricciones · Unidad 4</p>
     <h2>Línea de mates</h2>
-    <p id="gateIntro">Entrá con el mail que te pasó el docente. Te mandamos un enlace de acceso a ese correo.</p>
+    <p id="gateIntro">Entrá con tu mail. Te mandamos un enlace de acceso a ese correo.</p>
 
     <button class="gbtn" type="button" id="gateGoogle" hidden>
       <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
@@ -1129,7 +1129,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
         gateGoogle.hidden = false;
         gateOr.hidden = false;
         document.getElementById("gateIntro").textContent =
-          "Entrá con el mail que te pasó el docente: con Google, o con un enlace de acceso a ese correo.";
+          "Entrá con tu cuenta de Google, o con un enlace de acceso a tu correo.";
       })
       .catch(function(){ /* sin red: queda el mail, que es el camino de siempre */ });
 
@@ -1197,16 +1197,20 @@ select.pick[disabled]{opacity:.55;cursor:default}
       msg("Verificando tu acceso…");
       sb.from("members").select("email,is_admin,team").eq("email", email).maybeSingle()
         .then(function(r){
-          if(r.error || !r.data){
+          if(r.error){
             gate.hidden = false;
             document.getElementById("app").hidden = true;
             gateOut.hidden = false;
-            msg("El mail " + email + " no está en la lista del curso. Pedile al docente que te agregue.", "err");
+            msg("No se pudo verificar tu acceso: " + r.error.message, "err");
             return;
           }
-          isAdmin = !!r.data.is_admin;
+          /* El acceso está abierto: con haber iniciado sesión alcanza.
+             Si todavía no hay fila en members entra igual, como alumno sin
+             equipo; el alta la hace el trigger de la base. */
+          var row = r.data || {};
+          isAdmin = !!row.is_admin;
           myEmail = email;
-          myTeam  = r.data.team || null;
+          myTeam  = row.team || null;
           showWho();
           document.getElementById("signout").hidden = false;
           adminTab.hidden = !isAdmin;

@@ -40,7 +40,7 @@ Eso crea tres tablas:
 
 | tabla     | qué guarda                                              |
 |-----------|---------------------------------------------------------|
-| `members` | quién puede entrar, y quién es docente                  |
+| `members` | registro de quién entró, su equipo y quién es docente     |
 | `teams`   | seis filas, una por equipo, con la matriz de dados      |
 | `config`  | una fila: qué estadísticas ve el curso                  |
 
@@ -80,28 +80,43 @@ Cualquiera de los dos te da la URL que va en el paso 4.
 
 ---
 
-## Manejar la lista del curso
+## Quién puede entrar
 
-Todo pasa por la tabla `members`. Desde el SQL Editor:
+**Cualquiera con una cuenta de Google**, o con acceso a cualquier casilla de
+mail. No hay lista de invitados que mantener: la primera vez que alguien
+inicia sesión, un trigger sobre `auth.users` le crea la fila en `members`
+con `is_admin = false`.
+
+Eso significa que **cualquiera que encuentre la URL puede entrar y cargar
+dados en los seis equipos**. Es deliberado, para no tener que cargar la lista
+del curso antes de cada clase, pero conviene tenerlo presente: si el ejercicio
+se hace en vivo, alguien de afuera podría escribir sobre los datos.
+
+Lo único que se carga a mano es quién es docente, porque el alta automática
+nunca da ese permiso:
 
 ```sql
--- sumar gente
+-- hacer docente a alguien (mail en minúscula)
 insert into public.members (email, is_admin, nota) values
-  ('alumno@ejemplo.com', false, 'Equipo 3')
+  ('docente@ejemplo.com', true, 'docente')
 on conflict (email) do update set is_admin = excluded.is_admin;
 
--- ver la lista
-select email, is_admin, nota from public.members order by email;
+-- ver quién entró y en qué equipo quedó
+select email, is_admin, team, nota from public.members order by email;
 
--- sacar a alguien
-delete from public.members where email = 'alguien@ejemplo.com';
+-- limpiar el registro entre cursadas: se dan de alta solos de nuevo
+delete from public.members where not is_admin;
 ```
 
-Los mails van **en minúscula**. Quien no esté en la tabla puede iniciar
-sesión, pero no ve absolutamente nada: las políticas RLS le devuelven cero
-filas y la página se lo dice.
+Los equipos no hace falta asignarlos acá: se hace desde la pestaña Admin.
 
-Para sumar otro docente, `is_admin = true`.
+### Volver a cerrarlo a una lista
+
+Si alguna vez querés el comportamiento anterior — solo entra quien vos
+cargaste — cambiá el cuerpo de `is_member()` en `supabase/setup.sql` por la
+versión que está comentada justo arriba, y volvé a correr el archivo. El
+trigger puede quedar: se vuelve inofensivo, porque la fila que crea ya no
+alcanza para pasar.
 
 ---
 
@@ -150,8 +165,8 @@ abriéndolo con doble clic antes de publicar nada.
 
 | Capa | Para qué sirve |
 |------|----------------|
-| Login por mail (Supabase Auth) | Identifica a la persona |
-| Tabla `members` | Decide quién entra y quién es docente |
+| Login por Google o mail (Supabase Auth) | Identifica a la persona. Entrar está abierto a cualquiera |
+| Tabla `members` | Registra a quien entra y decide quién es docente |
 | Políticas RLS | Aplican esa decisión **del lado del servidor** |
 | `config.js` | Solo dice a qué proyecto conectarse; no es un secreto |
 
