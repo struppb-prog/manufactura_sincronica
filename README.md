@@ -1,0 +1,1 @@
+# manufactura_sincronica
