@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador Línea de Mates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f4f6f0;
+  --surface:#ffffff;
+  --surface-2:#ebeee4;
+  --line:#dbe0d2;
+  --line-strong:#b6c0a7;
+  --ink:#171c12;
+  --ink-2:#555e49;
+  --ink-3:#7f886f;
+  --accent:#2f5d3a;
+  --accent-ink:#ffffff;
+  --accent-soft:#e3ece0;
+  --neg:#d03b3b;
+  --pos:#0ca30c;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --grid:#e7eadf;
+  --shadow:0 1px 2px rgba(23,28,18,.06), 0 8px 24px -16px rgba(23,28,18,.30);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#12150f; --surface:#1b1f18; --surface-2:#232921;
+    --line:#333a2b; --line-strong:#4d563f;
+    --ink:#eef1e7; --ink-2:#aeb5a2; --ink-3:#848c76;
+    --accent:#8fc45f; --accent-ink:#12150f; --accent-soft:#26311d;
+    --neg:#e66767; --pos:#4cbf4c;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+    --grid:#2b3124;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#12150f; --surface:#1b1f18; --surface-2:#232921;
+  --line:#333a2b; --line-strong:#4d563f;
+  --ink:#eef1e7; --ink-2:#aeb5a2; --ink-3:#848c76;
+  --accent:#8fc45f; --accent-ink:#12150f; --accent-soft:#26311d;
+  --neg:#e66767; --pos:#4cbf4c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --grid:#2b3124;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+}
+img{max-width:100%}
+[hidden]{display:none !important}
+.wrap{
+  max-width:1180px;margin:0 auto;
+  padding-inline:clamp(16px, 3vw, 32px);
+  padding-block:clamp(24px, 4vw, 44px) 56px;
+  display:flex;flex-direction:column;gap:28px;
+}
+
+/* ---------- puerta de entrada ---------- */
+.gate{
+  position:fixed;inset:0;background:var(--bg);z-index:50;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.gatecard{
+  width:100%;max-width:430px;background:var(--surface);
+  border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);padding:clamp(22px,4vw,30px);
+}
+.gatecard h2{
+  font-family:"Archivo", sans-serif;
+  font-variation-settings:"wdth" 112, "wght" 780;
+  font-size:30px;line-height:1.05;margin:0 0 10px;letter-spacing:-.015em;
+}
+.gatecard p{margin:0;color:var(--ink-2);font-size:14px}
+.gatecard form{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+input.txt{
+  font:inherit;padding:11px 12px;width:100%;
+  border:1px solid var(--line-strong);border-radius:3px;
+  background:var(--surface);color:var(--ink);
+}
+input.txt:focus{border-color:var(--accent);outline:none}
+button.primary{
+  font:inherit;font-weight:600;padding:11px 14px;border:none;border-radius:3px;
+  background:var(--accent);color:var(--accent-ink);cursor:pointer;
+}
+button.primary[disabled]{opacity:.55;cursor:default}
+.gatemsg{margin-top:16px !important;font-size:13px;min-height:1.2em}
+.gatemsg.err{color:var(--neg)}
+.gatemsg.ok{color:var(--ink)}
+.linkbtn{
+  background:none;border:none;padding:0;margin-top:14px;
+  color:var(--ink-2);font:inherit;font-size:13px;
+  text-decoration:underline;cursor:pointer;
+}
+.codebox{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.codebox .lab{font-size:13px;color:var(--ink-3)}
+
+/* ---------- header ---------- */
+.eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 10px;
+}
+h1{
+  font-family:"Archivo", ui-sans-serif, system-ui, sans-serif;
+  font-variation-settings:"wdth" 112, "wght" 780;
+  font-size:clamp(30px, 5.2vw, 46px);line-height:1.02;
+  letter-spacing:-.015em;margin:0;text-wrap:balance;
+}
+.lede{margin:12px 0 0;max-width:64ch;color:var(--ink-2)}
+.lede b{color:var(--ink);font-weight:600}
+
+/* ---------- cadena ---------- */
+.chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;margin-top:4px}
+.link{
+  display:flex;align-items:center;gap:9px;background:var(--surface);
+  border:1px solid var(--line);border-radius:3px;padding:7px 12px 7px 9px;
+}
+.link .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.link .num{font-family:"IBM Plex Mono", monospace;font-size:11px;color:var(--ink-3)}
+.link .nm{
+  font-family:"Archivo", sans-serif;
+  font-variation-settings:"wdth" 92, "wght" 640;
+  font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;
+}
+.arrow{display:flex;align-items:center;color:var(--ink-3);font-size:14px}
+
+/* ---------- barra ---------- */
+.bar{
+  display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;
+  border-block:1px solid var(--line);padding-block:10px;
+}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.tab{
+  font:inherit;font-weight:500;font-size:13.5px;padding:7px 14px;
+  border:1px solid transparent;border-radius:999px;background:transparent;
+  color:var(--ink-2);cursor:pointer;
+}
+.tab:hover{background:var(--surface-2);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.tab.admin{border-color:var(--line-strong);margin-left:8px;display:flex;align-items:center;gap:7px}
+.tab.admin::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+.tab.admin[aria-selected="true"]::before{background:var(--accent-ink)}
+.bar .spacer{flex:1 1 auto}
+.ghost{
+  font:inherit;font-size:13px;padding:7px 13px;
+  border:1px solid var(--line-strong);border-radius:3px;
+  background:var(--surface);color:var(--ink-2);cursor:pointer;
+}
+.ghost:hover{color:var(--ink);border-color:var(--ink-3)}
+:where(button,input,a,label):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sync{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-3);font-family:"IBM Plex Mono", monospace}
+.sync b{width:7px;height:7px;border-radius:50%;background:var(--ink-3);flex:none}
+.sync.live b{background:var(--pos)}
+.who{font-size:12.5px;color:var(--ink-3)}
+
+.note{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--accent-soft);border:1px solid var(--line);
+  border-left:3px solid var(--accent);border-radius:3px;
+  padding:10px 14px;font-size:13.5px;color:var(--ink-2);
+}
+.note strong{color:var(--ink);font-weight:600}
+
+/* ---------- tabla ---------- */
+.board{background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);overflow:hidden}
+.scroller{overflow-x:auto}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:960px}
+table.grid th, table.grid td{padding:0;text-align:center;font-weight:400;border-bottom:1px solid var(--line)}
+th.rowlab, td.rowlab{
+  text-align:left;padding:0 14px;min-width:172px;width:172px;
+  position:sticky;left:0;background:var(--surface);
+  border-right:1px solid var(--line-strong);z-index:2;
+}
+thead .rowlab{background:var(--surface-2)}
+.st-head{
+  font-family:"Archivo", sans-serif;font-variation-settings:"wdth" 92, "wght" 660;
+  font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink);
+  background:var(--surface-2);height:38px;border-bottom:1px solid var(--line);position:relative;
+}
+.st-head::after{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
+.st-head span{display:block;padding-top:3px}
+.grp{border-left:2px solid var(--line-strong)}
+.v-head{font-family:"IBM Plex Mono", monospace;font-size:11.5px;color:var(--ink-3);background:var(--surface-2);height:26px;width:58px}
+tbody th.rowlab{font-size:13px;font-weight:600;color:var(--ink);height:44px}
+tbody th.rowlab small{display:block;font-weight:400;font-size:11.5px;color:var(--ink-3)}
+td.cell{font-family:"IBM Plex Mono", monospace;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink-2);height:44px}
+tr.r-mov td.cell{color:var(--ink);font-weight:600}
+tr.r-inv td.cell.hot{color:var(--ink);font-weight:600}
+tr.r-dev td.cell{font-size:13.5px}
+table.grid tr:last-child td, table.grid tr:last-child th{border-bottom:none}
+tr.r-dado td{background:var(--surface-2)}
+tr.r-dado th.rowlab{background:var(--surface-2)}
+input.die{
+  width:40px;height:32px;text-align:center;
+  font-family:"IBM Plex Mono", monospace;font-size:15px;font-weight:600;
+  color:var(--ink);background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:3px;padding:0;
+}
+input.die::placeholder{color:var(--ink-3);font-weight:400}
+input.die:hover{border-color:var(--ink-3)}
+input.die:focus{border-color:var(--accent)}
+.neg{color:var(--neg)}
+.pos{color:var(--pos)}
+.zero{color:var(--ink-3)}
+
+/* ---------- indicadores ---------- */
+.stats{
+  display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;
+}
+.stat{background:var(--surface);padding:16px 18px 18px}
+.stat .k{font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
+.stat .v{
+  font-family:"Archivo", sans-serif;font-variation-settings:"wdth" 104, "wght" 720;
+  font-size:30px;line-height:1.15;margin-top:8px;font-variant-numeric:tabular-nums;
+}
+.stat .s{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+
+/* ---------- tarjetas / gráfico ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:18px clamp(14px,2.5vw,22px) 20px}
+.card h2{font-family:"Archivo", sans-serif;font-variation-settings:"wdth" 100, "wght" 700;font-size:17px;margin:0;letter-spacing:-.005em}
+.card p.sub{margin:5px 0 0;font-size:13.5px;color:var(--ink-2);max-width:62ch}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:16px 0 6px}
+.lg{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+.lg i{width:14px;height:3px;border-radius:2px;display:block;flex:none}
+.plot{position:relative}
+svg.chart{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
+.tip{
+  position:absolute;pointer-events:none;background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:4px;box-shadow:var(--shadow);
+  padding:9px 11px;font-size:12.5px;min-width:154px;opacity:0;
+  transform:translate(-50%, -100%);transition:opacity .09s linear;z-index:5;
+}
+.tip.on{opacity:1}
+.tip .th{font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.tip .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.tip .row .nm{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
+.tip .row .nm i{width:9px;height:9px;border-radius:2px;flex:none}
+.tip .row .val{font-family:"IBM Plex Mono", monospace;font-variant-numeric:tabular-nums;color:var(--ink)}
+
+.hint{margin:-16px 0 -8px;font-size:12.5px;color:var(--ink-3)}
+.foot{font-size:12.5px;color:var(--ink-3);max-width:70ch}
+.foot code{font-family:"IBM Plex Mono", monospace;font-size:11.5px;color:var(--ink-2)}
+
+/* ---------- admin ---------- */
+.switches{display:flex;flex-direction:column;gap:2px;margin-top:16px}
+.sw{display:flex;align-items:center;gap:14px;padding:12px 2px;border-top:1px solid var(--line);cursor:pointer}
+.sw:last-child{border-bottom:1px solid var(--line)}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw .track{
+  width:40px;height:23px;border-radius:999px;background:var(--surface-2);
+  border:1px solid var(--line-strong);flex:none;position:relative;
+  transition:background .14s ease, border-color .14s ease;
+}
+.sw .track::after{
+  content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;
+  background:var(--ink-3);transition:transform .14s ease, background .14s ease;
+}
+.sw input:checked + .track{background:var(--accent);border-color:var(--accent)}
+.sw input:checked + .track::after{transform:translateX(17px);background:var(--accent-ink)}
+.sw input:focus-visible + .track{outline:2px solid var(--accent);outline-offset:2px}
+.sw .txt{display:flex;flex-direction:column}
+.sw .txt b{font-weight:600;font-size:14px}
+.sw .txt span{font-size:12.5px;color:var(--ink-3)}
+.sw .state{margin-left:auto;font-family:"IBM Plex Mono", monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+
+table.cmp{border-collapse:separate;border-spacing:0;width:100%;margin-top:14px;min-width:560px}
+table.cmp th, table.cmp td{border-bottom:1px solid var(--line);padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums}
+table.cmp th{font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);font-weight:400}
+table.cmp th:first-child, table.cmp td:first-child{text-align:left}
+table.cmp td{font-family:"IBM Plex Mono", monospace;font-size:13.5px;color:var(--ink-2)}
+table.cmp td.name{font-family:"IBM Plex Sans", sans-serif;font-weight:600;color:var(--ink)}
+table.cmp td.kits{color:var(--ink);font-weight:600}
+table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
+.barwrap{position:relative;height:16px;background:var(--surface-2);border-radius:2px}
+.barwrap .fill{position:absolute;inset:0 auto 0 0;background:var(--s5);border-radius:2px 4px 4px 2px}
+.barwrap .ref{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--line-strong)}
+.cmpnote{font-size:12px;color:var(--ink-3);margin-top:10px}
+.adminfoot{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+
+@media (max-width:640px){
+  .stats{grid-template-columns:repeat(2, minmax(0,1fr))}
+  .stat .v{font-size:26px}
+  .tab.admin{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<!-- =================== PUERTA DE ENTRADA =================== -->
+<div class="gate" id="gate">
+  <div class="gatecard">
+    <p class="eyebrow">Teoría de las Restricciones · Unidad 4</p>
+    <h2>Línea de mates</h2>
+    <p id="gateIntro">Entrá con el mail que te pasó el docente. Te mandamos un enlace de acceso a ese correo.</p>
+
+    <form id="gateForm">
+      <input class="txt" type="email" id="gateEmail" placeholder="tu@mail.com" autocomplete="email" required>
+      <button class="primary" type="submit" id="gateSend">Enviarme el enlace</button>
+    </form>
+
+    <div class="codebox" id="codeBox" hidden>
+      <span class="lab">¿Abriste el mail en otro dispositivo? Pegá acá el código de 6 dígitos.</span>
+      <input class="txt" type="text" id="gateCode" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      <button class="primary" type="button" id="gateVerify">Entrar con el código</button>
+    </div>
+
+    <p class="gatemsg" id="gateMsg"></p>
+    <button class="linkbtn" id="gateOut" hidden>Salir de esta cuenta</button>
+  </div>
+</div>
+
+<!-- =================== APLICACIÓN =================== -->
+<div class="wrap" id="app" hidden>
+
+  <header>
+    <p class="eyebrow">Teoría de las Restricciones · Unidad 4</p>
+    <h1>Línea de mates</h1>
+    <p class="lede">Cinco estaciones en serie, cinco vueltas, un dado por estación. Cada dado promedia <b>3,5</b>, así que la línea “debería” terminar <b>17,5 kits</b> en cinco vueltas. Nunca los termina: cargá los dados y mirá dónde se acumula el inventario.</p>
+  </header>
+
+  <div class="chain" id="chain"></div>
+
+  <div class="bar">
+    <div class="tabs" role="tablist" aria-label="Equipos" id="tabs"></div>
+    <div class="spacer"></div>
+    <span class="who" id="who"></span>
+    <div class="sync" id="sync"><b></b><span>Conectando…</span></div>
+    <button class="ghost" id="clear" type="button">Limpiar este equipo</button>
+    <button class="ghost" id="signout" type="button" hidden>Salir</button>
+  </div>
+
+  <div class="note" id="localNote" hidden>
+    <span><strong>Sin sincronización.</strong> Esta vista guarda los datos solo en esta computadora.</span>
+  </div>
+
+  <div id="teamView" style="display:flex;flex-direction:column;gap:28px">
+    <p class="hint">Deslizá la tabla hacia los costados para recorrer las cinco estaciones. La columna de etiquetas queda fija.</p>
+
+    <div class="board">
+      <div class="scroller">
+        <table class="grid" id="grid">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <section class="card" id="chartCard">
+      <h2>Desviación acumulada por estación</h2>
+      <p class="sub">Cuánto se aleja cada estación de su promedio teórico de 3,5 por vuelta. Si las fluctuaciones fueran independientes, las líneas oscilarían alrededor de cero; encadenadas, se hunden.</p>
+      <div class="legend" id="legend"></div>
+      <div class="plot" id="plot">
+        <svg class="chart" id="chart" viewBox="0 0 760 320" role="img" aria-label="Desviación acumulada por estación a lo largo de las vueltas"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+    </section>
+
+    <p class="foot">Mismas fórmulas que la planilla original: <code>movidas = MÍN(dado; inventario previo + movidas de la estación anterior)</code>, <code>inventario = inventario previo + entrada − movidas</code>, <code>desviación = movidas − 3,5 + desviación de la vuelta anterior</code>. La estación 1 siempre tiene material, por eso mueve exactamente lo que marca su dado. Al cargar un dado el foco salta a la estación siguiente de la misma vuelta.</p>
+  </div>
+
+  <div id="adminView" hidden style="display:flex;flex-direction:column;gap:28px">
+    <section class="card">
+      <h2>Qué ven los equipos</h2>
+      <p class="sub">Los cambios se aplican al instante en todas las computadoras que tengan la página abierta. Vos seguís viendo los números completos acá abajo, aunque los apagues para el curso.</p>
+      <div class="switches" id="switches"></div>
+    </section>
+
+    <section class="card">
+      <h2>Los seis equipos</h2>
+      <p class="sub">Kits terminados contra los 17,5 que promete el promedio. La marca vertical es la producción teórica de las vueltas que ese equipo lleva cargadas.</p>
+      <div class="scroller"><table class="cmp" id="cmp"></table></div>
+      <p class="cmpnote">WIP = unidades frenadas entre estaciones al cierre de la última vuelta cargada.</p>
+      <div class="adminfoot">
+        <button class="ghost" id="loadSample" type="button">Cargar ejemplo en Equipo 1</button>
+        <button class="ghost" id="clearAll" type="button">Borrar los seis equipos</button>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<script src="config.js"></script>
+
+<script>
+(function(){
+  "use strict";
+
+  var STATIONS = [
+    {n:1, name:"MATES",        c:"var(--s1)"},
+    {n:2, name:"BOMBILLAS",    c:"var(--s2)"},
+    {n:3, name:"YERBERO",      c:"var(--s3)"},
+    {n:4, name:"TERMOS",       c:"var(--s4)"},
+    {n:5, name:"KIT COMPLETO", c:"var(--s5)"}
+  ];
+  var NV = 5, NS = 5, KEY = "toc-linea-mates-v1";
+  var TEAM_IDS = ["e1","e2","e3","e4","e5","e6"];
+  var SAMPLE = [[3,5,2,6,4],[4,2,6,3,5],[2,6,4,5,1],[5,3,3,2,6],[6,4,5,4,2]];
+
+  function blank(){
+    var t=[],s,v;
+    for(s=0;s<NS;s++){ t[s]=[]; for(v=0;v<NV;v++) t[s][v]=null; }
+    return t;
+  }
+  function normalize(raw){
+    var t = blank(), s, v;
+    if(!Array.isArray(raw)) return t;
+    for(s=0;s<NS;s++){
+      if(!Array.isArray(raw[s])) continue;
+      for(v=0;v<NV;v++){
+        var d = raw[s][v];
+        t[s][v] = (typeof d === "number" && d>=1 && d<=6) ? Math.floor(d) : null;
+      }
+    }
+    return t;
+  }
+
+  var state = {teams:[], active:0, view:"team"};
+  for(var q=0;q<6;q++) state.teams.push(blank());
+
+  var sb = null, isAdmin = false, syncing = false;
+  var cfg = {stats:true, chart:true, dev:true};
+  var dirtyUntil = [0,0,0,0,0,0], pushTimer = [null,null,null,null,null,null];
+
+  /* ---------- respaldo local ---------- */
+  function saveLocal(){
+    if(syncing) return;
+    try{ localStorage.setItem(KEY, JSON.stringify({teams:state.teams})); }catch(e){}
+  }
+  function loadLocal(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return false;
+      var o = JSON.parse(raw);
+      if(!o || !Array.isArray(o.teams)) return false;
+      for(var i=0;i<6;i++) state.teams[i] = normalize(o.teams[i]);
+      return true;
+    }catch(e){ return false; }
+  }
+
+  /* ---------- modelo ---------- */
+  function compute(dice){
+    var mov=[], inv=[], dev=[], s, v;
+    for(s=0;s<NS;s++){ mov[s]=[]; inv[s]=[]; dev[s]=[]; }
+    for(s=0;s<NS;s++){
+      for(v=0;v<NV;v++){
+        var d = dice[s][v];
+        if(d===null || d===undefined){ mov[s][v]=null; inv[s][v]=null; dev[s][v]=null; continue; }
+        var m, i;
+        if(s===0){ m = d; i = 0; }
+        else{
+          var prev = (v>0 && inv[s][v-1]!==null) ? inv[s][v-1] : 0;
+          var inc  = (mov[s-1][v]!==null && mov[s-1][v]!==undefined) ? mov[s-1][v] : 0;
+          m = Math.min(d, prev + inc);
+          i = prev + inc - m;
+        }
+        var pd = (v>0 && dev[s][v-1]!==null) ? dev[s][v-1] : 0;
+        mov[s][v]=m; inv[s][v]=i; dev[s][v]= m - 3.5 + pd;
+      }
+    }
+    return {mov:mov, inv:inv, dev:dev};
+  }
+  function summarize(dice){
+    var m = compute(dice), s, v, done=0, kits=0, wip=0, last=null;
+    for(v=0;v<NV;v++) if(m.mov[NS-1][v]!==null){ done=v+1; kits+=m.mov[NS-1][v]; last=m.dev[NS-1][v]; }
+    for(s=0;s<NS;s++){
+      var li=null;
+      for(v=0;v<NV;v++) if(m.inv[s][v]!==null) li=m.inv[s][v];
+      if(li!==null) wip+=li;
+    }
+    return {m:m, done:done, kits:kits, wip:wip, last:last, theo:3.5*done};
+  }
+  function anyData(dice){
+    for(var s=0;s<NS;s++) for(var v=0;v<NV;v++) if(dice[s][v]!==null) return true;
+    return false;
+  }
+  function num(x, dec){ return (x===null||x===undefined) ? "" : x.toFixed(dec||0).replace(".", ","); }
+  function signed(x){
+    if(x===null || x===undefined) return "";
+    var s = Math.abs(x).toFixed(1).replace(".", ",");
+    if(x > 0.0001) return "+" + s;
+    if(x < -0.0001) return "−" + s;
+    return "0,0";
+  }
+  function cls(x){ return x===null ? "" : x < -0.0001 ? "neg" : x > 0.0001 ? "pos" : "zero"; }
+
+  /* ---------- cadena ---------- */
+  var chain = document.getElementById("chain");
+  STATIONS.forEach(function(st, i){
+    if(i){
+      var a = document.createElement("div");
+      a.className = "arrow"; a.setAttribute("aria-hidden","true"); a.textContent = "→";
+      chain.appendChild(a);
+    }
+    var el0 = document.createElement("div");
+    el0.className = "link";
+    el0.innerHTML = '<span class="dot" style="background:'+st.c+'"></span>'
+                  + '<span class="num">0'+st.n+'</span><span class="nm">'+st.name+'</span>';
+    chain.appendChild(el0);
+  });
+
+  /* ---------- pestañas ---------- */
+  var tabsEl = document.getElementById("tabs");
+  var tabBtns = [];
+  for(var t=0;t<6;t++){
+    (function(idx){
+      var b = document.createElement("button");
+      b.type="button"; b.className="tab"; b.setAttribute("role","tab"); b.id="tab-"+idx;
+      b.textContent = "Equipo "+(idx+1);
+      b.addEventListener("click", function(){ state.active = idx; state.view="team"; renderAll(); });
+      tabsEl.appendChild(b); tabBtns.push(b);
+    })(t);
+  }
+  var adminTab = document.createElement("button");
+  adminTab.type="button"; adminTab.className="tab admin"; adminTab.setAttribute("role","tab");
+  adminTab.textContent = "Admin"; adminTab.hidden = true;
+  adminTab.addEventListener("click", function(){ state.view = "admin"; renderAll(); });
+  tabsEl.appendChild(adminTab);
+
+  /* ---------- tabla ---------- */
+  var thead = document.getElementById("thead");
+  var r1 = document.createElement("tr");
+  r1.innerHTML = '<th class="rowlab st-head" rowspan="2" scope="col"><span>Estación</span></th>';
+  STATIONS.forEach(function(st){
+    var th = document.createElement("th");
+    th.className = "st-head grp"; th.colSpan = NV; th.scope = "colgroup";
+    th.style.setProperty("--c", st.c);
+    th.innerHTML = '<span>'+st.n+' · '+st.name+'</span>';
+    r1.appendChild(th);
+  });
+  thead.appendChild(r1);
+  var r2 = document.createElement("tr");
+  STATIONS.forEach(function(){
+    for(var v=0;v<NV;v++){
+      var th = document.createElement("th");
+      th.className = "v-head" + (v===0 ? " grp" : ""); th.scope="col";
+      th.textContent = String(v+1);
+      r2.appendChild(th);
+    }
+  });
+  thead.appendChild(r2);
+
+  var tbody = document.getElementById("tbody");
+  var ROWS = [
+    {k:"dado", cls:"r-dado", lab:"Dado",       sub:"capacidad de la vuelta"},
+    {k:"mov",  cls:"r-mov",  lab:"Movidas",    sub:"unidades que pasan"},
+    {k:"inv",  cls:"r-inv",  lab:"Inventario", sub:"lo que queda esperando"},
+    {k:"dev",  cls:"r-dev",  lab:"Desviación", sub:"acumulada vs. 3,5"}
+  ];
+  var inputs = [], cells = {mov:[], inv:[], dev:[]}, devRow = null;
+  ROWS.forEach(function(row){
+    var tr = document.createElement("tr");
+    tr.className = row.cls;
+    if(row.k==="dev") devRow = tr;
+    var th = document.createElement("th");
+    th.className="rowlab"; th.scope="row";
+    th.innerHTML = row.lab + '<small>' + row.sub + '</small>';
+    tr.appendChild(th);
+    for(var s=0;s<NS;s++){
+      if(row.k!=="dado") cells[row.k][s] = [];
+      for(var v=0;v<NV;v++){
+        var td = document.createElement("td");
+        td.className = "cell" + (v===0 ? " grp" : "");
+        if(row.k==="dado"){
+          var inp = document.createElement("input");
+          inp.className="die"; inp.type="text"; inp.inputMode="numeric";
+          inp.maxLength=1; inp.placeholder="–"; inp.id="die-"+s+"-"+v;
+          inp.setAttribute("aria-label", "Estación "+(s+1)+" "+STATIONS[s].name+", vuelta "+(v+1)+", dado");
+          inp.dataset.s = s; inp.dataset.v = v;
+          td.appendChild(inp); inputs.push(inp);
+        }else cells[row.k][s][v] = td;
+        tr.appendChild(td);
+      }
+    }
+    tbody.appendChild(tr);
+  });
+  function inputAt(s,v){ return document.getElementById("die-"+s+"-"+v); }
+
+  inputs.forEach(function(inp){
+    inp.addEventListener("input", function(){
+      var val = inp.value.replace(/[^1-6]/g,"").slice(-1);
+      inp.value = val;
+      var s = +inp.dataset.s, v = +inp.dataset.v;
+      state.teams[state.active][s][v] = val === "" ? null : parseInt(val,10);
+      dirtyUntil[state.active] = Date.now() + 3000;
+      pushTeam(state.active);
+      saveLocal();
+      renderData();
+      if(val !== ""){
+        var nx = (s<NS-1) ? inputAt(s+1, v) : (v<NV-1 ? inputAt(0, v+1) : null);
+        if(nx){ nx.focus(); nx.select(); }
+      }
+    });
+    inp.addEventListener("focus", function(){ inp.select(); });
+    inp.addEventListener("keydown", function(e){
+      var s = +inp.dataset.s, v = +inp.dataset.v, tgt=null;
+      if(e.key==="ArrowRight") tgt = inputAt(s, Math.min(NV-1, v+1));
+      else if(e.key==="ArrowLeft") tgt = inputAt(s, Math.max(0, v-1));
+      else if(e.key==="ArrowDown") tgt = inputAt(Math.min(NS-1, s+1), v);
+      else if(e.key==="ArrowUp") tgt = inputAt(Math.max(0, s-1), v);
+      if(tgt){ e.preventDefault(); tgt.focus(); tgt.select(); }
+    });
+  });
+
+  /* ---------- indicadores ---------- */
+  var statsEl = document.getElementById("stats");
+  var chartCard = document.getElementById("chartCard");
+  var statNodes = ["Kits terminados","Producción teórica","Desviación final","Inventario en proceso"].map(function(k){
+    var e2 = document.createElement("div");
+    e2.className="stat";
+    e2.innerHTML = '<div class="k">'+k+'</div><div class="v">–</div><div class="s"></div>';
+    statsEl.appendChild(e2);
+    return {v: e2.querySelector(".v"), s: e2.querySelector(".s")};
+  });
+
+  var legendEl = document.getElementById("legend");
+  STATIONS.forEach(function(st){
+    var l = document.createElement("span");
+    l.className="lg";
+    l.innerHTML = '<i style="background:'+st.c+'"></i>'+st.n+' · '+st.name;
+    legendEl.appendChild(l);
+  });
+
+  /* ---------- gráfico ---------- */
+  var svg = document.getElementById("chart");
+  var tip = document.getElementById("tip");
+  var plot = document.getElementById("plot");
+  var NSVG = "http://www.w3.org/2000/svg";
+  var W=760, H=320, PL=52, PR=22, PT=16, PB=40;
+  var lastDev = null;
+
+  function el(name, attrs){
+    var n = document.createElementNS(NSVG, name);
+    for(var k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function txt(attrs, content){ var n = el("text", attrs); n.textContent = content; return n; }
+
+  function drawChart(dev, empty){
+    lastDev = dev;
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+    var lo=0, hi=0, s, v;
+    for(s=0;s<NS;s++) for(v=0;v<NV;v++){
+      var d = dev[s][v];
+      if(d!==null){ if(d<lo) lo=d; if(d>hi) hi=d; }
+    }
+    if(hi-lo < 2){ hi += 1; lo -= 1; }
+    var span = hi-lo;
+    var step = Math.pow(10, Math.floor(Math.log(span/4)/Math.LN10));
+    var mult = (span/4)/step;
+    step *= (mult>5 ? 10 : mult>2.5 ? 5 : mult>1.2 ? 2.5 : 1);
+    var yMin = Math.floor(lo/step)*step, yMax = Math.ceil(hi/step)*step;
+    if(yMax===yMin) yMax = yMin + step;
+
+    var x = function(i){ return PL + (W-PL-PR) * (i/NV); };
+    var y = function(val){ return PT + (H-PT-PB) * (1 - (val-yMin)/(yMax-yMin)); };
+
+    for(var tv = yMin; tv <= yMax + 1e-9; tv += step){
+      var yy = y(tv), isZero = Math.abs(tv) < 1e-9;
+      svg.appendChild(el("line",{x1:PL, x2:W-PR, y1:yy, y2:yy,
+        stroke: isZero ? "var(--line-strong)" : "var(--grid)",
+        "stroke-width": isZero ? 1.5 : 1}));
+      svg.appendChild(txt({x:PL-10, y:yy+4, "text-anchor":"end", fill:"var(--ink-3)",
+        "font-size":"11", "font-family":"IBM Plex Mono, monospace"},
+        (tv>0?"+":tv<0?"−":"") + Math.abs(tv).toFixed(1).replace(".",",")));
+    }
+    for(var i=0;i<=NV;i++){
+      svg.appendChild(txt({x:x(i), y:H-PB+20, "text-anchor":"middle", fill:"var(--ink-3)",
+        "font-size":"11", "font-family":"IBM Plex Mono, monospace"}, String(i)));
+    }
+    svg.appendChild(txt({x:(PL+W-PR)/2, y:H-6, "text-anchor":"middle", fill:"var(--ink-3)",
+      "font-size":"11.5", "font-family":"IBM Plex Sans, sans-serif"}, "Vuelta"));
+    svg.appendChild(txt({x:0, y:0, "text-anchor":"middle", fill:"var(--ink-3)",
+      "font-size":"11.5", "font-family":"IBM Plex Sans, sans-serif",
+      transform:"translate(13,"+((PT+H-PB)/2)+") rotate(-90)"}, "Desviación acumulada"));
+
+    if(empty){
+      svg.appendChild(txt({x:(PL+W-PR)/2, y:(PT+H-PB)/2 + 4, "text-anchor":"middle",
+        fill:"var(--ink-3)", "font-size":"13", "font-family":"IBM Plex Sans, sans-serif"},
+        "Cargá los dados de la primera vuelta para empezar."));
+      tip.classList.remove("on");
+      return;
+    }
+
+    var cross = el("line",{x1:0,x2:0,y1:PT,y2:H-PB,stroke:"var(--line-strong)","stroke-width":1,opacity:0});
+    svg.appendChild(cross);
+
+    for(s=0;s<NS;s++){
+      var pts = [[x(0), y(0)]];
+      for(v=0;v<NV;v++){
+        if(dev[s][v]===null) break;
+        pts.push([x(v+1), y(dev[s][v])]);
+      }
+      if(pts.length<2) continue;
+      var dstr = pts.map(function(p,idx){ return (idx?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1); }).join(" ");
+      svg.appendChild(el("path",{d:dstr, fill:"none", stroke:STATIONS[s].c,
+        "stroke-width":2, "stroke-linejoin":"round", "stroke-linecap":"round"}));
+      (function(color){
+        pts.forEach(function(p, idx){
+          if(idx===0) return;
+          svg.appendChild(el("circle",{cx:p[0], cy:p[1], r:4.5, fill:color,
+            stroke:"var(--surface)", "stroke-width":2}));
+        });
+      })(STATIONS[s].c);
+    }
+
+    var hit = el("rect",{x:PL-14, y:PT, width:(W-PL-PR)+28, height:(H-PT-PB),
+      fill:"transparent", style:"cursor:crosshair"});
+    svg.appendChild(hit);
+
+    hit.addEventListener("mousemove", function(ev){
+      var r = svg.getBoundingClientRect();
+      var px = (ev.clientX - r.left) / r.width * W;
+      var i = Math.round((px - PL) / ((W-PL-PR)/NV));
+      i = Math.max(1, Math.min(NV, i));
+      var rows = "", any = false;
+      for(var ss=0; ss<NS; ss++){
+        var val = dev[ss][i-1];
+        if(val===null) continue;
+        any = true;
+        rows += '<div class="row"><span class="nm"><i style="background:'+STATIONS[ss].c+'"></i>'
+             + STATIONS[ss].name + '</span><span class="val">' + signed(val) + '</span></div>';
+      }
+      if(!any){ tip.classList.remove("on"); cross.setAttribute("opacity",0); return; }
+      tip.innerHTML = '<div class="th">Vuelta '+i+'</div>'+rows;
+      tip.classList.add("on");
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
+      var pr = plot.getBoundingClientRect();
+      tip.style.left = (x(i)/W*pr.width) + "px";
+      tip.style.top  = Math.max(46, ev.clientY - pr.top - 14) + "px";
+    });
+    hit.addEventListener("mouseleave", function(){
+      tip.classList.remove("on"); cross.setAttribute("opacity",0);
+    });
+  }
+
+  /* ---------- panel admin ---------- */
+  var SWITCHES = [
+    {k:"stats", b:"Indicadores", s:"Kits terminados, producción teórica, desviación final e inventario."},
+    {k:"chart", b:"Gráfico de desviación", s:"La curva que revela el efecto acumulado antes de tiempo."},
+    {k:"dev",   b:"Fila de desviación",    s:"La última fila de la tabla de cada equipo."}
+  ];
+  var swInputs = {};
+  var switchesEl = document.getElementById("switches");
+  SWITCHES.forEach(function(d){
+    var lab = document.createElement("label");
+    lab.className = "sw";
+    lab.innerHTML = '<input type="checkbox" id="sw-'+d.k+'"><span class="track"></span>'
+      + '<span class="txt"><b>'+d.b+'</b><span>'+d.s+'</span></span>'
+      + '<span class="state">Visible</span>';
+    switchesEl.appendChild(lab);
+    var inp = lab.querySelector("input");
+    swInputs[d.k] = {inp: inp, state: lab.querySelector(".state")};
+    inp.addEventListener("change", function(){
+      cfg[d.k] = inp.checked;
+      pushCfg();
+      applyCfg();
+    });
+  });
+
+  var cmpEl = document.getElementById("cmp");
+  function renderCmp(){
+    var rows = TEAM_IDS.map(function(_, i){ return summarize(state.teams[i]); });
+    var max = 17.5;
+    rows.forEach(function(r){ if(r.kits > max) max = r.kits; });
+    var html = '<thead><tr><th>Equipo</th><th>Kits terminados</th><th>Vueltas</th>'
+             + '<th>Teórico</th><th>Desviación</th><th>WIP</th></tr></thead><tbody>';
+    rows.forEach(function(r, i){
+      var pct = (r.kits / max * 100).toFixed(1);
+      var ref = (r.theo / max * 100).toFixed(1);
+      html += '<tr>'
+        + '<td class="name">Equipo '+(i+1)+'</td>'
+        + '<td class="barcell"><div class="barwrap">'
+          + '<div class="fill" style="width:'+pct+'%"></div>'
+          + (r.done ? '<div class="ref" style="left:'+ref+'%"></div>' : '')
+        + '</div></td>'
+        + '<td class="kits">'+(r.done ? r.kits : "–")+'</td>'
+        + '<td>'+(r.done ? r.done+"/5" : "–")+'</td>'
+        + '<td>'+(r.done ? num(r.theo,1) : "–")+'</td>'
+        + '<td class="'+cls(r.last)+'">'+(r.last===null ? "–" : signed(r.last))+'</td>'
+        + '<td>'+(r.done||r.wip ? r.wip : "–")+'</td>'
+        + '</tr>';
+    });
+    cmpEl.innerHTML = html + '</tbody>';
+  }
+
+  function applyCfg(){
+    statsEl.hidden = !cfg.stats;
+    chartCard.hidden = !cfg.chart;
+    devRow.hidden = !cfg.dev;
+    SWITCHES.forEach(function(d){
+      swInputs[d.k].inp.checked = !!cfg[d.k];
+      swInputs[d.k].state.textContent = cfg[d.k] ? "Visible" : "Oculto";
+    });
+  }
+
+  /* ---------- escritura ---------- */
+  var syncEl = document.getElementById("sync");
+  function setSync(live, label){
+    syncEl.classList.toggle("live", !!live);
+    syncEl.querySelector("span").textContent = label;
+  }
+  function pushTeam(i){
+    if(!sb) return;
+    if(pushTimer[i]) clearTimeout(pushTimer[i]);
+    pushTimer[i] = setTimeout(function(){
+      sb.from("teams")
+        .update({dice: state.teams[i], updated_at: new Date().toISOString()})
+        .eq("id", TEAM_IDS[i])
+        .then(function(res){ if(res && res.error) setSync(false, "Error al guardar"); });
+    }, 400);
+  }
+  function pushCfg(){
+    if(!sb) return;
+    sb.from("config")
+      .update({stats:!!cfg.stats, chart:!!cfg.chart, dev:!!cfg.dev, updated_at:new Date().toISOString()})
+      .eq("id","ui")
+      .then(function(res){ if(res && res.error) setSync(false, "No pudiste cambiar la configuración"); });
+  }
+
+  /* ---------- render ---------- */
+  function renderData(){
+    var dice = state.teams[state.active];
+    var r = summarize(dice), m = r.m, s, v;
+    for(s=0;s<NS;s++){
+      for(v=0;v<NV;v++){
+        cells.mov[s][v].textContent = num(m.mov[s][v]);
+        var td = cells.inv[s][v];
+        td.textContent = num(m.inv[s][v]);
+        td.classList.toggle("hot", m.inv[s][v] !== null && m.inv[s][v] > 0);
+        var dv = cells.dev[s][v];
+        dv.textContent = signed(m.dev[s][v]);
+        dv.className = "cell" + (v===0?" grp":"") + " " + cls(m.dev[s][v]);
+      }
+    }
+    statNodes[0].v.textContent = r.done ? String(r.kits) : "–";
+    statNodes[0].s.textContent = r.done ? "en " + r.done + (r.done===1?" vuelta":" vueltas") : "sin datos todavía";
+    statNodes[1].v.textContent = r.done ? num(r.theo,1) : "17,5";
+    statNodes[1].s.textContent = r.done ? "3,5 × " + r.done + (r.done===1?" vuelta":" vueltas") : "si se completan las 5 vueltas";
+    statNodes[2].v.textContent = r.last===null ? "–" : signed(r.last);
+    statNodes[2].v.className = "v " + cls(r.last);
+    statNodes[2].s.textContent = r.last===null ? "kits vs. teórico"
+      : (r.last<0 ? "kits por debajo del teórico" : r.last>0 ? "kits por encima del teórico" : "justo en el teórico");
+    statNodes[3].v.textContent = (r.done || r.wip) ? String(r.wip) : "–";
+    statNodes[3].s.textContent = "unidades frenadas en la línea";
+
+    drawChart(m.dev, !anyData(dice));
+    if(isAdmin || state.view === "admin") renderCmp();
+  }
+
+  function renderInputs(){
+    var dice = state.teams[state.active];
+    inputs.forEach(function(inp){
+      if(document.activeElement === inp) return;
+      var d = dice[+inp.dataset.s][+inp.dataset.v];
+      inp.value = (d===null || d===undefined) ? "" : String(d);
+    });
+  }
+
+  function renderAll(){
+    var admin = state.view === "admin";
+    tabBtns.forEach(function(b,i){
+      b.setAttribute("aria-selected", (!admin && i===state.active) ? "true" : "false");
+    });
+    adminTab.setAttribute("aria-selected", admin ? "true" : "false");
+    document.getElementById("teamView").hidden = admin;
+    document.getElementById("adminView").hidden = !admin;
+    document.getElementById("clear").hidden = admin;
+    renderInputs();
+    renderData();
+    applyCfg();
+  }
+
+  /* ---------- acciones ---------- */
+  document.getElementById("clear").addEventListener("click", function(){
+    state.teams[state.active] = blank();
+    dirtyUntil[state.active] = Date.now() + 3000;
+    pushTeam(state.active); saveLocal(); renderAll();
+  });
+  document.getElementById("loadSample").addEventListener("click", function(){
+    state.teams[0] = SAMPLE.map(function(r){ return r.slice(); });
+    dirtyUntil[0] = Date.now() + 3000;
+    pushTeam(0); saveLocal(); renderAll();
+  });
+  document.getElementById("clearAll").addEventListener("click", function(){
+    if(!window.confirm("Se borran los dados de los seis equipos en todas las computadoras. ¿Seguimos?")) return;
+    for(var i=0;i<6;i++){
+      state.teams[i] = blank();
+      dirtyUntil[i] = Date.now() + 3000;
+      pushTeam(i);
+    }
+    saveLocal(); renderAll();
+  });
+  window.addEventListener("resize", function(){
+    if(lastDev) drawChart(lastDev, !anyData(state.teams[state.active]));
+  });
+
+  /* ============================================================
+     Modo local (sin Supabase configurado)
+     ============================================================ */
+  function localMode(){
+    sb = null; syncing = false;
+    document.getElementById("gate").hidden = true;
+    document.getElementById("app").hidden = false;
+    document.getElementById("localNote").hidden = false;
+    setSync(false, "Solo en esta compu");
+    adminTab.hidden = false;      // sin backend no hay roles: el panel queda a mano
+    isAdmin = true;
+    loadLocal();
+    renderAll();
+  }
+
+  /* ============================================================
+     Supabase: login por mail + datos compartidos
+     ============================================================ */
+  var gate      = document.getElementById("gate");
+  var gateForm  = document.getElementById("gateForm");
+  var gateEmail = document.getElementById("gateEmail");
+  var gateSend  = document.getElementById("gateSend");
+  var gateMsg   = document.getElementById("gateMsg");
+  var gateOut   = document.getElementById("gateOut");
+  var codeBox   = document.getElementById("codeBox");
+  var gateCode  = document.getElementById("gateCode");
+
+  function msg(text, kind){
+    gateMsg.textContent = text;
+    gateMsg.className = "gatemsg" + (kind ? " " + kind : "");
+  }
+
+  function startSupabase(createClient){
+    sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    gateForm.addEventListener("submit", function(e){
+      e.preventDefault();
+      var email = gateEmail.value.trim().toLowerCase();
+      if(!email) return;
+      gateSend.disabled = true;
+      msg("Mandando el enlace…");
+      sb.auth.signInWithOtp({
+        email: email,
+        options: {emailRedirectTo: window.location.href.split("#")[0]}
+      }).then(function(res){
+        gateSend.disabled = false;
+        if(res.error){ msg(res.error.message, "err"); return; }
+        msg("Listo. Revisá " + email + " y abrí el enlace. El mail puede tardar un minuto.", "ok");
+        codeBox.hidden = false;
+      });
+    });
+
+    document.getElementById("gateVerify").addEventListener("click", function(){
+      var email = gateEmail.value.trim().toLowerCase();
+      var token = gateCode.value.trim();
+      if(!email || !token) return;
+      msg("Verificando…");
+      sb.auth.verifyOtp({email: email, token: token, type: "email"}).then(function(res){
+        if(res.error) msg(res.error.message, "err");
+      });
+    });
+
+    gateOut.addEventListener("click", function(){ sb.auth.signOut(); });
+    document.getElementById("signout").addEventListener("click", function(){ sb.auth.signOut(); });
+
+    sb.auth.onAuthStateChange(function(){ check(); });
+    check();
+  }
+
+  function check(){
+    sb.auth.getSession().then(function(res){
+      var session = res.data && res.data.session;
+      if(!session){
+        gate.hidden = false;
+        document.getElementById("app").hidden = true;
+        gateOut.hidden = true;
+        return;
+      }
+      var email = (session.user.email || "").toLowerCase();
+      msg("Verificando tu acceso…");
+      sb.from("members").select("email,is_admin").eq("email", email).maybeSingle()
+        .then(function(r){
+          if(r.error || !r.data){
+            gate.hidden = false;
+            document.getElementById("app").hidden = true;
+            gateOut.hidden = false;
+            msg("El mail " + email + " no está en la lista del curso. Pedile al docente que te agregue.", "err");
+            return;
+          }
+          isAdmin = !!r.data.is_admin;
+          document.getElementById("who").textContent = email;
+          document.getElementById("signout").hidden = false;
+          adminTab.hidden = !isAdmin;
+          gate.hidden = true;
+          document.getElementById("app").hidden = false;
+          msg("");
+          loadRemote();
+        });
+    });
+  }
+
+  function loadRemote(){
+    syncing = true;
+    setSync(true, "Sincronizado");
+
+    sb.from("teams").select("id,dice").then(function(r){
+      if(r.error){ setSync(false, "Error al leer"); return; }
+      (r.data || []).forEach(function(row){
+        var i = TEAM_IDS.indexOf(row.id);
+        if(i >= 0) state.teams[i] = normalize(row.dice);
+      });
+      renderAll();
+    });
+
+    sb.from("config").select("stats,chart,dev").eq("id","ui").maybeSingle().then(function(r){
+      if(r.data) cfg = {stats: r.data.stats !== false, chart: r.data.chart !== false, dev: r.data.dev !== false};
+      applyCfg();
+    });
+
+    sb.channel("linea-de-mates")
+      .on("postgres_changes", {event:"*", schema:"public", table:"teams"}, function(p){
+        var row = p["new"];
+        if(!row || !row.id) return;
+        var i = TEAM_IDS.indexOf(row.id);
+        if(i < 0 || Date.now() < dirtyUntil[i]) return;
+        state.teams[i] = normalize(row.dice);
+        renderAll();
+      })
+      .on("postgres_changes", {event:"*", schema:"public", table:"config"}, function(p){
+        var row = p["new"];
+        if(!row) return;
+        cfg = {stats: row.stats !== false, chart: row.chart !== false, dev: row.dev !== false};
+        applyCfg();
+      })
+      .subscribe(function(status){
+        if(status === "SUBSCRIBED") setSync(true, "Sincronizado");
+        else if(status === "CHANNEL_ERROR" || status === "TIMED_OUT") setSync(false, "Sin conexión");
+      });
+  }
+
+  /* ---------- arranque ---------- */
+  applyCfg();
+  renderAll();
+
+  if(SUPABASE_URL && SUPABASE_ANON_KEY){
+    import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm")
+      .then(function(mod){ startSupabase(mod.createClient); })
+      .catch(function(){
+        msg("No se pudo cargar la librería de Supabase. Revisá la conexión.", "err");
+      });
+  }else{
+    localMode();
+  }
+})();
+</script>
+</body>
+</html>
