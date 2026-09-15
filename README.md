@@ -136,6 +136,12 @@ salta solo a la estación siguiente de la misma vuelta, que es el orden real
 del juego. Movidas, inventario y desviación se calculan solos y se ven en
 todas las computadoras al instante.
 
+Arriba de todo hay un panel plegable, **SincroMate: El Desafío de la Cadena
+Matera**, con el reglamento: roles del equipo, reglas de producción y dinámica
+del turno. Aparece abierto la primera vez y se puede cerrar de un clic; cada
+computadora recuerda cómo lo dejó, así que después de leerlo no vuelve a
+estorbar. Esa preferencia es local: no viaja a Supabase ni afecta a los demás.
+
 Además de la grilla, cada equipo ve una tabla de **capacidad y utilización por
 estación**: cuánta capacidad sacó en dados, cuánta usó de verdad, cuánto quedó
 frenado y qué porcentaje aprovechó. Ahí se ve el nudo del ejercicio: la

@@ -118,6 +118,52 @@ button.gbtn svg{width:18px;height:18px;flex:none}
 .or{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:12px;color:var(--ink-3)}
 .or::before, .or::after{content:"";flex:1;height:1px;background:var(--line)}
 
+/* ---------- reglas del juego ---------- */
+.reglas{
+  background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  box-shadow:var(--shadow);margin-top:18px;
+}
+.reglas > summary{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;
+  padding:14px 18px;cursor:pointer;list-style:none;
+}
+.reglas > summary::-webkit-details-marker{display:none}
+.reglas > summary::after{
+  content:"Mostrar";margin-left:auto;
+  font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);white-space:nowrap;
+}
+.reglas[open] > summary::after{content:"Ocultar"}
+.reglas > summary:hover{background:var(--surface-2)}
+.reglas .rtit{
+  font-family:"Archivo", sans-serif;
+  font-variation-settings:"wdth" 108, "wght" 720;
+  font-size:19px;letter-spacing:-.01em;color:var(--ink);
+}
+.reglas .rhint{font-size:12.5px;color:var(--ink-3)}
+.rbody{padding:0 18px 20px;border-top:1px solid var(--line);margin-top:2px}
+.rbody p{margin:14px 0 0;color:var(--ink-2);max-width:70ch}
+.rbody p b, .rbody li b{color:var(--ink);font-weight:600}
+.rbody h3{
+  font-family:"Archivo", sans-serif;
+  font-variation-settings:"wdth" 100, "wght" 700;
+  font-size:14.5px;margin:22px 0 0;color:var(--ink);
+}
+.rbody ul{margin:10px 0 0;padding-left:20px;color:var(--ink-2);max-width:70ch}
+.rbody li{margin-top:7px}
+.rbody .cierre{
+  margin-top:20px;padding-top:16px;border-top:1px solid var(--line);
+  color:var(--ink);
+}
+table.roles{border-collapse:separate;border-spacing:0;width:100%;margin-top:12px;min-width:420px}
+table.roles th, table.roles td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
+table.roles th{
+  font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:400;
+}
+table.roles td{font-size:13.5px;color:var(--ink-2)}
+table.roles td.rol{color:var(--ink);font-weight:600;white-space:nowrap}
+
 /* ---------- header ---------- */
 .eyebrow{
   font-family:"IBM Plex Mono", ui-monospace, monospace;
@@ -389,6 +435,49 @@ select.pick[disabled]{opacity:.55;cursor:default}
     <p class="lede" id="ledeText">Cinco estaciones en serie, cinco vueltas, un dado por estación. Cada dado promedia <b>3,5</b>, así que la línea “debería” terminar <b>17,5 kits</b> en cinco vueltas. Nunca los termina: cargá los dados y mirá dónde se acumula el inventario.</p>
   </header>
 
+  <details class="reglas" id="reglas">
+    <summary>
+      <span class="rtit">SincroMate: El Desafío de la Cadena Matera</span>
+      <span class="rhint">Cómo se juega</span>
+    </summary>
+    <div class="rbody">
+      <p>¡Bienvenidos a la fábrica! Su misión es ensamblar la mayor cantidad de kits materos, enfrentando los desafíos reales de la manufactura sincrónica: las <b>fluctuaciones estadísticas</b> y los <b>sucesos dependientes</b>. Además, deberán identificar el cuello de botella de su línea.</p>
+
+      <h3>1. Equipos y Roles</h3>
+      <p>Cada equipo de seis personas se organizará de la siguiente manera para simular la línea de montaje:</p>
+      <div class="scroller">
+        <table class="roles">
+          <thead><tr><th>Rol en la fábrica</th><th>Tarea asignada</th></tr></thead>
+          <tbody>
+            <tr><td class="rol">Estaciones 1 a 4</td><td>Producen el Mate (1), la Bombilla (2), el Yerbero (3) y el Termo (4).</td></tr>
+            <tr><td class="rol">Estación 5</td><td>Empaqueta y entrega el Kit Completo final.</td></tr>
+            <tr><td class="rol">Supervisor / Anotador</td><td>Registra la producción final, los dados y el inventario en cada ronda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>2. Reglas de Producción</h3>
+      <p>El flujo avanza secuencialmente. La capacidad de cada estación se define lanzando un dado de 6 caras:</p>
+      <ul>
+        <li><b>Capacidad:</b> el número del dado indica tu límite máximo de producción en ese turno.</li>
+        <li><b>Material disponible:</b> solo puedes procesar lo que recibiste de la estación anterior, más el inventario que te sobró de rondas previas (la Estación 1 asume que tiene materia prima infinita).</li>
+        <li><b>La regla de oro:</b> tu producción real será el número <b>menor</b> entre tu capacidad (el dado) y tu material disponible.</li>
+        <li><b>Inventario:</b> si tienes más material del que tu dado te permite procesar, el sobrante se queda en tu estación como inventario para la próxima ronda.</li>
+      </ul>
+
+      <h3>3. Dinámica del Turno</h3>
+      <p>El juego consta de 5 rondas exactas con la siguiente secuencia:</p>
+      <ul>
+        <li>La Estación 1 lanza el dado, produce y pasa las piezas a la Estación 2.</li>
+        <li>La Estación 2 lanza el dado, calcula su producción y pasa las piezas a la 3 (reteniendo como inventario el material que no logró procesar).</li>
+        <li>El ciclo se repite paso a paso hasta la Estación 5, que genera los kits terminados.</li>
+        <li>Al final de cada ronda, el Supervisor anota los kits logrados y los inventarios acumulados en cada estación, los cuales estarán disponibles para la ronda siguiente.</li>
+      </ul>
+
+      <p class="cierre">Al finalizar las 5 rondas, el equipo con la mayor cantidad de kits completos será el ganador. ¡Presten atención a dónde se acumulan las piezas a lo largo del juego!</p>
+    </div>
+  </details>
+
   <div class="chain" id="chain"></div>
 
   <div class="bar">
@@ -515,6 +604,16 @@ select.pick[disabled]{opacity:.55;cursor:default}
   var myEmail = "", myTeam = null;   // myTeam: "e1".."e6" o null si no le asignaron ninguno
   var cfg = {stats:true, chart:true, dev:true, cmp:false, foot:true, lede:true, util:true};
   var dirtyUntil = [0,0,0,0,0,0], pushTimer = [null,null,null,null,null,null];
+
+  /* ---------- reglas del juego ----------
+     Abiertas la primera vez y cerradas después, si así lo dejaron. Es una
+     preferencia de esta computadora nada más: no viaja a Supabase. */
+  var reglasEl = document.getElementById("reglas");
+  var RKEY = KEY + ":reglas";
+  try{ reglasEl.open = localStorage.getItem(RKEY) !== "0"; }catch(e){ reglasEl.open = true; }
+  reglasEl.addEventListener("toggle", function(){
+    try{ localStorage.setItem(RKEY, reglasEl.open ? "1" : "0"); }catch(e){}
+  });
 
   /* ---------- respaldo local ---------- */
   function saveLocal(){
