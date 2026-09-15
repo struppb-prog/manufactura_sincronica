@@ -230,10 +230,10 @@ h1{
 /* ---------- tabla ---------- */
 .board{background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);overflow:hidden}
 .scroller{overflow-x:auto}
-table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:960px}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:900px;table-layout:fixed}
 table.grid th, table.grid td{padding:0;text-align:center;font-weight:400;border-bottom:1px solid var(--line)}
 th.rowlab, td.rowlab{
-  text-align:left;padding:0 14px;min-width:172px;width:172px;
+  text-align:left;padding:0 12px;min-width:150px;width:150px;
   position:sticky;left:0;background:var(--surface);
   border-right:1px solid var(--line-strong);z-index:2;
 }
@@ -246,10 +246,10 @@ thead .rowlab{background:var(--surface-2)}
 .st-head::after{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
 .st-head span{display:block;padding-top:3px}
 .grp{border-left:2px solid var(--line-strong)}
-.v-head{font-family:"IBM Plex Mono", monospace;font-size:11.5px;color:var(--ink-3);background:var(--surface-2);height:26px;width:58px}
+.v-head{font-family:"IBM Plex Mono", monospace;font-size:11.5px;color:var(--ink-3);background:var(--surface-2);height:26px}
 tbody th.rowlab{font-size:13px;font-weight:600;color:var(--ink);height:44px}
 tbody th.rowlab small{display:block;font-weight:400;font-size:11.5px;color:var(--ink-3)}
-td.cell{font-family:"IBM Plex Mono", monospace;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink-2);height:44px}
+td.cell{font-family:"IBM Plex Mono", monospace;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink-2);height:44px;padding:0 3px}
 tr.r-mov td.cell{color:var(--ink);font-weight:600}
 tr.r-inv td.cell.hot{color:var(--ink);font-weight:600}
 tr.r-dev td.cell{font-size:13.5px}
@@ -257,7 +257,7 @@ table.grid tr:last-child td, table.grid tr:last-child th{border-bottom:none}
 tr.r-dado td{background:var(--surface-2)}
 tr.r-dado th.rowlab{background:var(--surface-2)}
 input.die{
-  width:40px;height:32px;text-align:center;
+  width:100%;max-width:40px;height:32px;text-align:center;
   font-family:"IBM Plex Mono", monospace;font-size:15px;font-weight:600;
   color:var(--ink);background:var(--surface);
   border:1px solid var(--line-strong);border-radius:3px;padding:0;
@@ -476,7 +476,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
   </div>
 
   <div id="teamView" style="display:flex;flex-direction:column;gap:28px">
-    <p class="hint">Deslizá la tabla hacia los costados para recorrer las cinco estaciones. La columna de etiquetas queda fija.</p>
+    <p class="hint" id="hint" hidden>Deslizá la tabla hacia los costados para recorrer las cinco estaciones. La columna de etiquetas queda fija.</p>
 
     <div class="board">
       <div class="scroller">
@@ -1283,7 +1283,16 @@ select.pick[disabled]{opacity:.55;cursor:default}
     }
     saveLocal(); renderAll();
   });
+  /* La tabla entra entera en una pantalla comun. En uno angosto vuelve a
+     deslizarse, y recién ahí tiene sentido decirlo. */
+  var hintEl = document.getElementById("hint");
+  var boardScroller = document.querySelector(".board .scroller");
+  function ajustarHint(){
+    hintEl.hidden = boardScroller.scrollWidth <= boardScroller.clientWidth + 1;
+  }
+
   window.addEventListener("resize", function(){
+    ajustarHint();
     if(lastDev) drawChart(lastDev, !anyData(state.teams[state.active]));
   });
 
@@ -1496,6 +1505,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
   /* ---------- arranque ---------- */
   applyCfg();
   renderAll();
+  ajustarHint();
 
   if(SUPABASE_URL && SUPABASE_ANON_KEY){
     import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm")
