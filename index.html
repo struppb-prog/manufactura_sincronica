@@ -306,6 +306,11 @@ table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
 .barwrap .fill{position:absolute;inset:0 auto 0 0;background:var(--s5);border-radius:2px 4px 4px 2px}
 .barwrap .ref{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--line-strong)}
 .cmpnote{font-size:12px;color:var(--ink-3);margin-top:10px}
+table.cmp tr.total td{
+  background:var(--surface-2);font-weight:600;color:var(--ink);
+  border-top:1px solid var(--line-strong);
+}
+table.cmp td.pct{color:var(--ink);font-weight:600}
 .adminfoot{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 
 table.mem{border-collapse:separate;border-spacing:0;width:100%;margin-top:14px;min-width:420px}
@@ -423,6 +428,13 @@ select.pick[disabled]{opacity:.55;cursor:default}
       </div>
     </section>
 
+    <section class="card" id="utilCard">
+      <h2>Capacidad y utilización por estación</h2>
+      <p class="sub">Cada estación tiró sus dados y esa fue toda la capacidad que tuvo. La que no alcanzó a usar no se guarda para la vuelta siguiente: se pierde.</p>
+      <div class="scroller"><table class="cmp" id="util"></table></div>
+      <p class="cmpnote">Capacidad desperdiciada = capacidad total − unidades procesadas. La estación 1 nunca desperdicia: siempre tiene material esperando, así que usa todo lo que saca.</p>
+    </section>
+
     <section class="card" id="cmpCard" hidden>
       <h2>Los seis equipos</h2>
       <p class="sub">Cómo le fue a cada equipo contra los 17,5 kits que promete el promedio. La marca vertical es la producción teórica de las vueltas que ese equipo lleva cargadas.</p>
@@ -501,7 +513,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
 
   var sb = null, isAdmin = false, syncing = false;
   var myEmail = "", myTeam = null;   // myTeam: "e1".."e6" o null si no le asignaron ninguno
-  var cfg = {stats:true, chart:true, dev:true, cmp:false, foot:true, lede:true};
+  var cfg = {stats:true, chart:true, dev:true, cmp:false, foot:true, lede:true, util:true};
   var dirtyUntil = [0,0,0,0,0,0], pushTimer = [null,null,null,null,null,null];
 
   /* ---------- respaldo local ---------- */
@@ -825,7 +837,8 @@ select.pick[disabled]{opacity:.55;cursor:default}
     {k:"dev",   b:"Fila de desviación",    s:"La última fila de la tabla de cada equipo."},
     {k:"cmp",   b:"Tabla de los seis equipos", s:"La comparativa entre equipos, que por defecto ves solo vos. Encendela para la discusión."},
     {k:"foot",  b:"Nota de fórmulas",    s:"El párrafo del pie que explica movidas, inventario y desviación."},
-    {k:"lede",  b:"Bajada del título",   s:"El texto de arriba que ya adelanta los 17,5 kits y que la línea nunca llega."}
+    {k:"lede",  b:"Bajada del título",   s:"El texto de arriba que ya adelanta los 17,5 kits y que la línea nunca llega."},
+    {k:"util",  b:"Capacidad por estación", s:"La tabla de capacidad total, unidades procesadas y capacidad desperdiciada."}
   ];
   var swInputs = {};
   var switchesEl = document.getElementById("switches");
@@ -848,8 +861,58 @@ select.pick[disabled]{opacity:.55;cursor:default}
   var cmpEl     = document.getElementById("cmp");
   var cmpTeamEl = document.getElementById("cmpTeam");
   var cmpCard   = document.getElementById("cmpCard");
+  var utilEl    = document.getElementById("util");
+  var utilCard  = document.getElementById("utilCard");
   var footNote  = document.getElementById("footNote");
   var ledeText  = document.getElementById("ledeText");
+  /* Capacidad por estacion. Capacidad total = lo que sacaron los dados de
+     esa estacion. Procesadas = lo que efectivamente movio. La diferencia es
+     capacidad que existio y no se uso, y no se recupera despues: por eso la
+     linea nunca alcanza el promedio teorico. */
+  function renderUtil(dice, m){
+    var html = '<thead><tr><th>Estación</th><th>Capacidad total</th>'
+             + '<th>Unidades procesadas</th><th>Inventario final (WIP)</th>'
+             + '<th>Capacidad desperdiciada</th><th>% utilización</th></tr></thead><tbody>';
+    var tCap = 0, tProc = 0, tWip = 0, hayAlgo = false, s, v;
+
+    for(s=0;s<NS;s++){
+      var cap = 0, proc = 0, wip = null, cargado = false;
+      for(v=0;v<NV;v++){
+        var d = dice[s][v];
+        if(d === null || d === undefined) continue;
+        cargado = true;
+        cap  += d;
+        proc += m.mov[s][v];
+      }
+      for(v=0;v<NV;v++) if(m.inv[s][v] !== null) wip = m.inv[s][v];
+
+      var desp = cap - proc;
+      var pct  = cap > 0 ? (proc / cap * 100) : null;
+      if(cargado){ hayAlgo = true; tCap += cap; tProc += proc; tWip += (wip || 0); }
+
+      html += '<tr>'
+        + '<td class="name">' + (s+1) + ' · ' + STATIONS[s].name + '</td>'
+        + '<td>'         + (cargado ? cap  : "–") + '</td>'
+        + '<td class="kits">' + (cargado ? proc : "–") + '</td>'
+        + '<td>'         + (cargado ? (wip === null ? 0 : wip) : "–") + '</td>'
+        + '<td>'         + (cargado ? desp : "–") + '</td>'
+        + '<td class="pct">' + (pct === null ? "–" : num(pct,1) + "%") + '</td>'
+        + '</tr>';
+    }
+
+    var tPct = tCap > 0 ? (tProc / tCap * 100) : null;
+    html += '<tr class="total">'
+      + '<td class="name">Total sistema</td>'
+      + '<td>'         + (hayAlgo ? tCap  : "–") + '</td>'
+      + '<td>'         + (hayAlgo ? tProc : "–") + '</td>'
+      + '<td>'         + (hayAlgo ? tWip  : "–") + '</td>'
+      + '<td>'         + (hayAlgo ? (tCap - tProc) : "–") + '</td>'
+      + '<td>'         + (tPct === null ? "–" : num(tPct,1) + "%") + '</td>'
+      + '</tr>';
+
+    utilEl.innerHTML = html + '</tbody>';
+  }
+
   function renderCmp(){
     var rows = TEAM_IDS.map(function(_, i){ return summarize(state.teams[i]); });
     var max = 17.5;
@@ -886,7 +949,8 @@ select.pick[disabled]{opacity:.55;cursor:default}
       dev:   row.dev   !== false,
       cmp:   row.cmp   === true,
       foot:  row.foot  !== false,
-      lede:  row.lede  !== false
+      lede:  row.lede  !== false,
+      util:  row.util  !== false
     };
   }
 
@@ -1000,6 +1064,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
     chartCard.hidden = !cfg.chart;
     devRow.hidden = !cfg.dev;
     cmpCard.hidden = !cfg.cmp;
+    utilCard.hidden = !cfg.util;
     footNote.hidden = !cfg.foot;
     ledeText.hidden = !cfg.lede;
     SWITCHES.forEach(function(d){
@@ -1038,7 +1103,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
     if(!sb) return;
     sb.from("config")
       .update({stats:!!cfg.stats, chart:!!cfg.chart, dev:!!cfg.dev,
-               cmp:!!cfg.cmp, foot:!!cfg.foot, lede:!!cfg.lede,
+               cmp:!!cfg.cmp, foot:!!cfg.foot, lede:!!cfg.lede, util:!!cfg.util,
                updated_at:new Date().toISOString()})
       .eq("id","ui")
       .then(function(res){ if(res && res.error) setSync(false, "No pudiste cambiar la configuración"); });
@@ -1070,6 +1135,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
     statNodes[3].v.textContent = (r.done || r.wip) ? String(r.wip) : "–";
     statNodes[3].s.textContent = "unidades frenadas en la línea";
 
+    renderUtil(dice, m);
     drawChart(m.dev, !anyData(dice));
     if(isAdmin || state.view === "admin" || cfg.cmp) renderCmp();
   }
@@ -1306,7 +1372,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
 
     reloadTeams();
 
-    sb.from("config").select("stats,chart,dev,cmp,foot,lede").eq("id","ui").maybeSingle().then(function(r){
+    sb.from("config").select("stats,chart,dev,cmp,foot,lede,util").eq("id","ui").maybeSingle().then(function(r){
       if(r.data) cfg = readCfg(r.data);
       applyCfg();
       renderData();

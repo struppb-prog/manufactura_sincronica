@@ -39,6 +39,7 @@ create table if not exists public.config (
   cmp        boolean not null default false,
   foot       boolean not null default true,
   lede       boolean not null default true,
+  util       boolean not null default true,
   updated_at timestamptz not null default now()
 );
 
@@ -69,6 +70,7 @@ alter table public.members add column if not exists team text;
 alter table public.config  add column if not exists cmp  boolean not null default false;
 alter table public.config  add column if not exists foot boolean not null default true;
 alter table public.config  add column if not exists lede boolean not null default true;
+alter table public.config  add column if not exists util boolean not null default true;
 
 -- La clave foránea va acá y no en el create table porque members
 -- se crea antes que teams.

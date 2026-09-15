@@ -136,10 +136,18 @@ salta solo a la estación siguiente de la misma vuelta, que es el orden real
 del juego. Movidas, inventario y desviación se calculan solos y se ven en
 todas las computadoras al instante.
 
+Además de la grilla, cada equipo ve una tabla de **capacidad y utilización por
+estación**: cuánta capacidad sacó en dados, cuánta usó de verdad, cuánto quedó
+frenado y qué porcentaje aprovechó. Ahí se ve el nudo del ejercicio: la
+estación 1 siempre marca 100 %, porque nunca espera material, y de la segunda
+en adelante el porcentaje cae. Esa capacidad perdida no se recupera después.
+
 La pestaña **Admin** aparece únicamente para quien tenga `is_admin = true`.
-Tiene tres interruptores —indicadores, gráfico y fila de desviación— que
-apagan y prenden esas partes en todas las pantallas a la vez. El docente
-igual ve los números completos en su tabla comparativa de los seis equipos.
+Tiene seis interruptores —indicadores, gráfico, fila de desviación, capacidad
+por estación, nota de fórmulas y bajada del título— más la tabla comparativa
+de los seis equipos, que arranca apagada. Cada uno apaga y prende esa parte en
+todas las pantallas a la vez. El docente igual ve los números completos en su
+propia tabla comparativa.
 
 ---
 
