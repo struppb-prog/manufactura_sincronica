@@ -1,4 +1,4 @@
-# Línea de mates
+# Sincro-Mate
 
 Simulador del ejercicio de dados de **Teoría de las Restricciones** (Unidad 4).
 Cinco estaciones en serie, cinco vueltas, un dado por estación y vuelta. Seis

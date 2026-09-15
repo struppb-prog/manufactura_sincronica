@@ -1,5 +1,5 @@
 -- ============================================================
---  Línea de mates — ejercicio de Teoría de las Restricciones
+--  Sincro-Mate — ejercicio de Teoría de las Restricciones
 --  Esquema + permisos para Supabase
 --
 --  Pegá TODO este archivo en el SQL Editor de tu proyecto
