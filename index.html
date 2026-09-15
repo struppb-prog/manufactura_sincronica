@@ -155,14 +155,10 @@ button.gbtn svg{width:18px;height:18px;flex:none}
   margin-top:20px;padding-top:16px;border-top:1px solid var(--line);
   color:var(--ink);
 }
-table.roles{border-collapse:separate;border-spacing:0;width:100%;margin-top:12px;min-width:420px}
-table.roles th, table.roles td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
-table.roles th{
-  font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--ink-3);font-weight:400;
+.rbody .jug{
+  font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-3);white-space:nowrap;margin-left:6px;
 }
-table.roles td{font-size:13.5px;color:var(--ink-2)}
-table.roles td.rol{color:var(--ink);font-weight:600;white-space:nowrap}
 
 /* ---------- header ---------- */
 .eyebrow{
@@ -437,44 +433,30 @@ select.pick[disabled]{opacity:.55;cursor:default}
 
   <details class="reglas" id="reglas">
     <summary>
-      <span class="rtit">SincroMate: El Desafío de la Cadena Matera</span>
+      <span class="rtit">Sincro-Mate</span>
       <span class="rhint">Cómo se juega</span>
     </summary>
     <div class="rbody">
       <p>¡Bienvenidos a la fábrica! Su misión es ensamblar la mayor cantidad de kits materos, enfrentando los desafíos reales de la manufactura sincrónica: las <b>fluctuaciones estadísticas</b> y los <b>sucesos dependientes</b>. Además, deberán identificar el cuello de botella de su línea.</p>
 
-      <h3>1. Equipos y Roles</h3>
-      <p>Cada equipo de seis personas se organizará de la siguiente manera para simular la línea de montaje:</p>
-      <div class="scroller">
-        <table class="roles">
-          <thead><tr><th>Rol en la fábrica</th><th>Tarea asignada</th></tr></thead>
-          <tbody>
-            <tr><td class="rol">Estaciones 1 a 4</td><td>Producen el Mate (1), la Bombilla (2), el Yerbero (3) y el Termo (4).</td></tr>
-            <tr><td class="rol">Estación 5</td><td>Empaqueta y entrega el Kit Completo final.</td></tr>
-            <tr><td class="rol">Supervisor / Anotador</td><td>Registra la producción final, los dados y el inventario en cada ronda.</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h3>2. Reglas de Producción</h3>
-      <p>El flujo avanza secuencialmente. La capacidad de cada estación se define lanzando un dado de 6 caras:</p>
+      <h3>#1 &middot; Equipos y roles</h3>
+      <p>Son seis equipos de seis integrantes cada uno, que se organizan a lo largo de cinco estaciones, siendo:</p>
       <ul>
-        <li><b>Capacidad:</b> el número del dado indica tu límite máximo de producción en ese turno.</li>
-        <li><b>Material disponible:</b> solo puedes procesar lo que recibiste de la estación anterior, más el inventario que te sobró de rondas previas (la Estación 1 asume que tiene materia prima infinita).</li>
-        <li><b>La regla de oro:</b> tu producción real será el número <b>menor</b> entre tu capacidad (el dado) y tu material disponible.</li>
-        <li><b>Inventario:</b> si tienes más material del que tu dado te permite procesar, el sobrante se queda en tu estación como inventario para la próxima ronda.</li>
+        <li><b>Estación N°1:</b> producción de mate <span class="jug">Jugador N°1</span></li>
+        <li><b>Estación N°2:</b> producción de bombillas <span class="jug">Jugador N°2</span></li>
+        <li><b>Estación N°3:</b> producción de yerberos <span class="jug">Jugador N°3</span></li>
+        <li><b>Estación N°4:</b> producción de termos <span class="jug">Jugador N°4</span></li>
+        <li><b>Estación N°5:</b> ensamblaje de kits materos completos <span class="jug">Jugador N°5</span></li>
       </ul>
+      <p>Cada uno de los integrantes asumirá el rol de una estación, y el integrante restante será el encargado de anotar los resultados en las planillas. <span class="jug">Jugador N°6</span></p>
 
-      <h3>3. Dinámica del Turno</h3>
-      <p>El juego consta de 5 rondas exactas con la siguiente secuencia:</p>
-      <ul>
-        <li>La Estación 1 lanza el dado, produce y pasa las piezas a la Estación 2.</li>
-        <li>La Estación 2 lanza el dado, calcula su producción y pasa las piezas a la 3 (reteniendo como inventario el material que no logró procesar).</li>
-        <li>El ciclo se repite paso a paso hasta la Estación 5, que genera los kits terminados.</li>
-        <li>Al final de cada ronda, el Supervisor anota los kits logrados y los inventarios acumulados en cada estación, los cuales estarán disponibles para la ronda siguiente.</li>
-      </ul>
+      <h3>#2 &middot; Reglas de la producción</h3>
+      <p>El objetivo del juego es armar la mayor cantidad posible de kits materos. El equipo que mayor cantidad de kits logre producir al final de la última ronda será el ganador. Se basa en un flujo de producción que avanza secuencialmente. Para que la estación N°2 produzca, antes tiene que haber recibido la producción de la estación N°1. Lo mismo con las estaciones siguientes. Al final de la primera ronda, se habrán obtenido una cierta cantidad de kits materos. Tengan en cuenta que el inventario se acumula a lo largo de las rondas.</p>
 
-      <p class="cierre">Al finalizar las 5 rondas, el equipo con la mayor cantidad de kits completos será el ganador. ¡Presten atención a dónde se acumulan las piezas a lo largo del juego!</p>
+      <h3>#3 &middot; Reglas del juego</h3>
+      <p>El juego consta de cinco rondas. Cada jugador lanza el dado, y el número que obtenga indica el límite máximo de producción de ese turno. Luego de obtener un valor, el integrante N°6 anota el resultado en la planilla. Solo puedes procesar lo que recibiste de la estación anterior, más el inventario que te sobró de rondas previas (es nulo si es la primera de las cinco rondas).</p>
+
+      <p class="cierre">¡A jugar!</p>
     </div>
   </details>
 
