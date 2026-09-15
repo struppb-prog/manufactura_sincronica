@@ -166,6 +166,57 @@ where u.email is not null
 on conflict (email) do nothing;
 
 -- ------------------------------------------------------------
+-- 3c. Un dado cargado queda congelado
+--     Mismo criterio que la planilla original: una vez que se
+--     anota una tirada, no se puede corregir ni borrar. Si se
+--     pudiera repetir una tirada mala, el ejercicio deja de
+--     mostrar lo que tiene que mostrar.
+--
+--     El docente si puede: es quien arregla errores de carga.
+--     Vive en un trigger y no en una politica RLS porque hay que
+--     comparar el valor viejo contra el nuevo, celda por celda,
+--     y una politica solo ve una de las dos versiones a la vez.
+-- ------------------------------------------------------------
+
+create or replace function public.enforce_dados_inmutables()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  s int; v int;
+  viejo jsonb; nuevo jsonb;
+begin
+  if public.is_course_admin() then
+    return new;
+  end if;
+
+  for s in 0..4 loop
+    for v in 0..4 loop
+      viejo := old.dice -> s -> v;
+      nuevo := new.dice -> s -> v;
+
+      -- Celda vacia: se puede llenar. Celda con un dado: intocable.
+      if viejo is not null and viejo <> 'null'::jsonb
+         and nuevo is distinct from viejo then
+        raise exception
+          'El dado de la estacion % vuelta % ya estaba cargado: no se puede cambiar ni borrar.',
+          s + 1, v + 1
+          using errcode = '42501';
+      end if;
+    end loop;
+  end loop;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists teams_dados_inmutables on public.teams;
+create trigger teams_dados_inmutables
+  before update on public.teams
+  for each row execute function public.enforce_dados_inmutables();
+
+-- ------------------------------------------------------------
 -- 4. Row Level Security
 --    Sin política = prohibido. No hay INSERT ni DELETE para
 --    nadie desde la página: las filas ya existen y solo se

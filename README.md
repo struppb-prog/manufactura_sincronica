@@ -161,6 +161,22 @@ abriéndolo con doble clic antes de publicar nada.
 
 ---
 
+## Un dado cargado no se toca
+
+Igual que en la planilla original: una vez que se anota una tirada, esa celda
+queda congelada. No se puede corregir ni borrar. Si se pudiera repetir una
+tirada mala, el ejercicio dejaría de mostrar lo que tiene que mostrar.
+
+El docente sí puede cambiarlas — es quien arregla los errores de carga — y es
+el único que ve el botón "Limpiar este equipo".
+
+La regla está en un trigger de la base (`enforce_dados_inmutables`), no solo en
+el navegador: aunque alguien fuerce el campo desde la consola, el `update` se
+rechaza. En la página aparece "Ese dado ya estaba cargado" y la grilla vuelve a
+lo que dice el servidor.
+
+---
+
 ## Qué protege qué
 
 | Capa | Para qué sirve |
@@ -168,6 +184,7 @@ abriéndolo con doble clic antes de publicar nada.
 | Login por Google o mail (Supabase Auth) | Identifica a la persona. Entrar está abierto a cualquiera |
 | Tabla `members` | Registra a quien entra y decide quién es docente |
 | Políticas RLS | Aplican esa decisión **del lado del servidor** |
+| Trigger `enforce_dados_inmutables` | Impide cambiar o borrar un dado ya cargado, salvo el docente |
 | `config.js` | Solo dice a qué proyecto conectarse; no es un secreto |
 
 La pestaña Admin no se esconde solo en el navegador: aunque alguien la fuerce

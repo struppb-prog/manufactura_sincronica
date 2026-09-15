@@ -223,6 +223,12 @@ input.die{
 input.die::placeholder{color:var(--ink-3);font-weight:400}
 input.die:hover{border-color:var(--ink-3)}
 input.die:focus{border-color:var(--accent)}
+/* Dado ya cargado: queda a la vista pero no se puede tocar. */
+input.die.fijo{
+  background:var(--surface-2);border-color:var(--line);
+  color:var(--ink-2);cursor:not-allowed;
+}
+input.die.fijo:hover{border-color:var(--line)}
 .neg{color:var(--neg)}
 .pos{color:var(--pos)}
 .zero{color:var(--ink-3)}
@@ -661,6 +667,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
       pushTeam(state.active);
       saveLocal();
       renderData();
+      renderInputs();
       if(val !== ""){
         var nx = (s<NS-1) ? inputAt(s+1, v) : (v<NV-1 ? inputAt(0, v+1) : null);
         if(nx){ nx.focus(); nx.select(); }
@@ -975,7 +982,17 @@ select.pick[disabled]{opacity:.55;cursor:default}
       sb.from("teams")
         .update({dice: state.teams[i], updated_at: new Date().toISOString()})
         .eq("id", TEAM_IDS[i])
-        .then(function(res){ if(res && res.error) setSync(false, "Error al guardar"); });
+        .then(function(res){
+          if(!res || !res.error) return;
+          // 42501 = el trigger rechazo tocar un dado ya cargado
+          var congelado = res.error.code === "42501"
+            || /ya estaba cargado/.test(res.error.message || "");
+          setSync(false, congelado ? "Ese dado ya estaba cargado" : "Error al guardar");
+          if(congelado){
+            dirtyUntil[i] = 0;          // soltar el bloqueo optimista
+            reloadTeams();              // volver a lo que dice el servidor
+          }
+        });
     }, 400);
   }
   function pushCfg(){
@@ -1021,9 +1038,15 @@ select.pick[disabled]{opacity:.55;cursor:default}
   function renderInputs(){
     var dice = state.teams[state.active];
     inputs.forEach(function(inp){
-      if(document.activeElement === inp) return;
       var d = dice[+inp.dataset.s][+inp.dataset.v];
-      inp.value = (d===null || d===undefined) ? "" : String(d);
+      var cargado = (d !== null && d !== undefined);
+      /* Una tirada anotada no se corrige ni se borra, igual que en la
+         planilla. El docente sí puede: es quien arregla los errores. */
+      inp.readOnly = cargado && !isAdmin;
+      inp.classList.toggle("fijo", inp.readOnly);
+      inp.title = inp.readOnly ? "Ya cargado. Solo el docente puede corregirlo." : "";
+      if(document.activeElement === inp) return;   // no pisar lo que se está tecleando
+      inp.value = cargado ? String(d) : "";
     });
   }
 
@@ -1048,7 +1071,7 @@ select.pick[disabled]{opacity:.55;cursor:default}
     adminTab.setAttribute("aria-selected", admin ? "true" : "false");
     document.getElementById("teamView").hidden = admin;
     document.getElementById("adminView").hidden = !admin;
-    document.getElementById("clear").hidden = admin;
+    document.getElementById("clear").hidden = admin || !isAdmin;
     renderInputs();
     renderData();
     applyCfg();
@@ -1223,10 +1246,11 @@ select.pick[disabled]{opacity:.55;cursor:default}
     });
   }
 
-  function loadRemote(){
-    syncing = true;
-    setSync(true, "Sincronizado");
-
+  /* Releer los seis equipos y punto. Separado de loadRemote porque esa
+     tambien abre el canal de realtime, y llamarla dos veces dejaria dos
+     suscripciones con el mismo nombre. */
+  function reloadTeams(){
+    if(!sb) return;
     sb.from("teams").select("id,dice").then(function(r){
       if(r.error){ setSync(false, "Error al leer"); return; }
       (r.data || []).forEach(function(row){
@@ -1235,6 +1259,13 @@ select.pick[disabled]{opacity:.55;cursor:default}
       });
       renderAll();
     });
+  }
+
+  function loadRemote(){
+    syncing = true;
+    setSync(true, "Sincronizado");
+
+    reloadTeams();
 
     sb.from("config").select("stats,chart,dev,cmp,foot,lede").eq("id","ui").maybeSingle().then(function(r){
       if(r.data) cfg = readCfg(r.data);
