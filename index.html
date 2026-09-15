@@ -249,10 +249,10 @@ thead .rowlab{background:var(--surface-2)}
 .v-head{font-family:"IBM Plex Mono", monospace;font-size:11.5px;color:var(--ink-3);background:var(--surface-2);height:26px}
 tbody th.rowlab{font-size:13px;font-weight:600;color:var(--ink);height:44px}
 tbody th.rowlab small{display:block;font-weight:400;font-size:11.5px;color:var(--ink-3)}
-td.cell{font-family:"IBM Plex Mono", monospace;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink-2);height:44px;padding:0 3px}
+table.grid td.cell{font-family:"IBM Plex Mono", monospace;font-variant-numeric:tabular-nums;font-size:14px;color:var(--ink-2);height:44px;padding:0 2px}
 tr.r-mov td.cell{color:var(--ink);font-weight:600}
 tr.r-inv td.cell.hot{color:var(--ink);font-weight:600}
-tr.r-dev td.cell{font-size:13.5px}
+tr.r-dev td.cell{font-size:12px;letter-spacing:-.02em}
 table.grid tr:last-child td, table.grid tr:last-child th{border-bottom:none}
 tr.r-dado td{background:var(--surface-2)}
 tr.r-dado th.rowlab{background:var(--surface-2)}
@@ -751,6 +751,18 @@ select.pick[disabled]{opacity:.55;cursor:default}
   });
   function inputAt(s,v){ return document.getElementById("die-"+s+"-"+v); }
 
+  /* El orden de juego es estacion por estacion dentro de la vuelta, y recien
+     despues la vuelta siguiente. El foco avanza al proximo dado que todavia
+     se pueda cargar: si cayera en uno ya congelado, la tecla siguiente se
+     perderia sin ningun aviso. */
+  function siguienteLibre(s, v){
+    for(var n = v * NS + s + 1; n < NS * NV; n++){
+      var e = inputAt(n % NS, Math.floor(n / NS));
+      if(e && !e.readOnly) return e;
+    }
+    return null;
+  }
+
   inputs.forEach(function(inp){
     inp.addEventListener("input", function(){
       var val = inp.value.replace(/[^1-6]/g,"").slice(-1);
@@ -763,8 +775,9 @@ select.pick[disabled]{opacity:.55;cursor:default}
       renderData();
       renderInputs();
       if(val !== ""){
-        var nx = (s<NS-1) ? inputAt(s+1, v) : (v<NV-1 ? inputAt(0, v+1) : null);
+        var nx = siguienteLibre(s, v);
         if(nx){ nx.focus(); nx.select(); }
+        else inp.blur();   // no queda nada por cargar: soltar el foco
       }
     });
     inp.addEventListener("focus", function(){ inp.select(); });
