@@ -344,6 +344,7 @@ table.cmp td{font-family:"IBM Plex Mono", monospace;font-size:13.5px;color:var(-
 table.cmp td.name{font-family:"IBM Plex Sans", sans-serif;font-weight:600;color:var(--ink)}
 table.cmp td.kits{color:var(--ink);font-weight:600}
 table.cmp td.barcell{width:36%;min-width:150px;padding-right:16px}
+table.cmp th.barhead{text-align:left}
 .barwrap{position:relative;height:16px;background:var(--surface-2);border-radius:2px}
 .barwrap .fill{position:absolute;inset:0 auto 0 0;background:var(--s5);border-radius:2px 4px 4px 2px}
 .barwrap .ref{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--line-strong)}
@@ -1011,8 +1012,9 @@ select.pick[disabled]{opacity:.55;cursor:default}
     var rows = TEAM_IDS.map(function(_, i){ return summarize(state.teams[i]); });
     var max = 17.5;
     rows.forEach(function(r){ if(r.kits > max) max = r.kits; });
-    var html = '<thead><tr><th>Equipo</th><th>Kits terminados</th><th>Vueltas</th>'
-             + '<th>Teórico</th><th>Desviación</th><th>WIP</th></tr></thead><tbody>';
+    var html = '<thead><tr><th>Equipo</th><th class="barhead">Contra 17,5</th>'
+             + '<th>Kits terminados</th><th>Vueltas</th><th>Teórico</th>'
+             + '<th>Desviación</th><th>Inventario (WIP)</th></tr></thead><tbody>';
     rows.forEach(function(r, i){
       var pct = (r.kits / max * 100).toFixed(1);
       var ref = (r.theo / max * 100).toFixed(1);
