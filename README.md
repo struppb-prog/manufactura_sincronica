@@ -92,23 +92,31 @@ dados en los seis equipos**. Es deliberado, para no tener que cargar la lista
 del curso antes de cada clase, pero conviene tenerlo presente: si el ejercicio
 se hace en vivo, alguien de afuera podría escribir sobre los datos.
 
-Lo único que se carga a mano es quién es docente, porque el alta automática
-nunca da ese permiso:
+El alta automática nunca otorga el rol de docente: entra todo el mundo como
+alumno. De ahí en más, **rol y equipo se manejan desde la pestaña Admin**, en
+la tarjeta "Quién juega en cada equipo": una fila por persona, con un
+desplegable para el rol y otro para el equipo. No hace falta SQL.
+
+Dos detalles de esa tarjeta:
+
+- **Tu propia fila tiene el rol trabado.** Si el único docente se degrada a sí
+  mismo, no queda nadie que pueda devolverle el permiso desde la página y hay
+  que volver al SQL Editor. El resto de los docentes sí se pueden degradar.
+- **Nombrar a un docente pide confirmación**, porque ese rol puede ocultarle
+  cosas al curso, borrar los dados de los seis equipos, corregir dados ya
+  cargados y nombrar a más docentes.
+
+El único momento en que hace falta SQL es el primero, para nombrarte docente a
+vos, porque todavía no hay ningún docente que pueda hacerlo desde la página.
+Eso sale del bloque final de `supabase/setup.sql`. Después:
 
 ```sql
--- hacer docente a alguien (mail en minúscula)
-insert into public.members (email, is_admin, nota) values
-  ('docente@ejemplo.com', true, 'docente')
-on conflict (email) do update set is_admin = excluded.is_admin;
-
--- ver quién entró y en qué equipo quedó
+-- ver quién entró, con qué rol y en qué equipo
 select email, is_admin, team, nota from public.members order by email;
 
 -- limpiar el registro entre cursadas: se dan de alta solos de nuevo
 delete from public.members where not is_admin;
 ```
-
-Los equipos no hace falta asignarlos acá: se hace desde la pestaña Admin.
 
 ### Volver a cerrarlo a una lista
 

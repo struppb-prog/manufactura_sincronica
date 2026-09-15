@@ -314,6 +314,7 @@ table.mem th{font-family:"IBM Plex Mono", monospace;font-size:10.5px;letter-spac
 table.mem td{font-size:13.5px;color:var(--ink-2)}
 table.mem td.who{font-family:"IBM Plex Mono", monospace;color:var(--ink);word-break:break-all}
 table.mem td.pickcell{width:184px}
+table.mem td.rolcell{width:136px}
 .badge{
   font-family:"IBM Plex Mono", monospace;font-size:10px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);
@@ -919,41 +920,79 @@ select.pick[disabled]{opacity:.55;cursor:default}
       membersNote.textContent = "Todavía no hay nadie en la lista del curso.";
       return;
     }
-    var html = '<thead><tr><th>Persona</th><th>Equipo</th></tr></thead><tbody>';
+    var html = '<thead><tr><th>Persona</th><th>Rol</th><th>Equipo</th></tr></thead><tbody>';
     memberRows.forEach(function(m){
       var opts = '<option value="">Sin asignar</option>';
       TEAM_IDS.forEach(function(id, i){
         opts += '<option value="'+id+'"'+(m.team===id?' selected':'')+'>Equipo '+(i+1)+'</option>';
       });
+      /* La propia fila queda con el rol trabado: si el único docente se
+         degrada a sí mismo, nadie puede devolverle el permiso desde la
+         página y hay que volver al SQL Editor. */
+      var propia = m.email === myEmail;
+      var rol = '<select class="pick" data-campo="rol" data-email="'+esc(m.email)+'"'
+        + ' aria-label="Rol de '+esc(m.email)+'"'
+        + (propia ? ' disabled title="No podés quitarte el rol de docente a vos mismo."' : '')
+        + '>'
+        + '<option value="0"'+(m.is_admin?'':' selected')+'>Alumno</option>'
+        + '<option value="1"'+(m.is_admin?' selected':'')+'>Docente</option>'
+        + '</select>';
       html += '<tr>'
-        + '<td class="who">'+esc(m.email)+(m.is_admin?' <span class="badge">docente</span>':'')+'</td>'
-        + '<td class="pickcell"><select class="pick" data-email="'+esc(m.email)+'"'
+        + '<td class="who">'+esc(m.email)+(propia?' <span class="badge">vos</span>':'')+'</td>'
+        + '<td class="rolcell">'+rol+'</td>'
+        + '<td class="pickcell"><select class="pick" data-campo="team" data-email="'+esc(m.email)+'"'
           + ' aria-label="Equipo de '+esc(m.email)+'">'+opts+'</select></td>'
         + '</tr>';
     });
     membersEl.innerHTML = html + '</tbody>';
   }
 
-  membersEl.addEventListener("change", function(e){
-    var sel = e.target;
-    if(!sel || !sel.classList || !sel.classList.contains("pick")) return;
-    var email = sel.getAttribute("data-email");
-    var team  = sel.value || null;
+  function guardarMiembro(sel, email, cambio, aplicar, exito, redibujar){
     sel.disabled = true;
     membersNote.textContent = "Guardando…";
-    sb.from("members").update({team: team}).eq("email", email).then(function(res){
+    sb.from("members").update(cambio).eq("email", email).then(function(res){
       sel.disabled = false;
       if(res && res.error){
         membersNote.textContent = "No se pudo guardar: " + res.error.message;
         loadMembers();
         return;
       }
-      memberRows.forEach(function(m){ if(m.email === email) m.team = team; });
-      membersNote.textContent = team
-        ? esc(email) + " juega en Equipo " + (TEAM_IDS.indexOf(team)+1)
-          + ". Si tiene la página abierta, se le aplica sin recargar."
-        : esc(email) + " vuelve a ver los seis equipos.";
+      memberRows.forEach(function(m){ if(m.email === email) aplicar(m); });
+      if(redibujar) renderMembers();
+      membersNote.textContent = exito;
     });
+  }
+
+  membersEl.addEventListener("change", function(e){
+    var sel = e.target;
+    if(!sel || !sel.classList || !sel.classList.contains("pick")) return;
+    var email = sel.getAttribute("data-email");
+
+    if(sel.getAttribute("data-campo") === "rol"){
+      var docente = sel.value === "1";
+      if(docente && !window.confirm(
+          "Vas a hacer docente a " + email + ".\n\n"
+          + "Va a poder ocultarle cosas al curso, borrar los dados de los seis "
+          + "equipos, corregir dados ya cargados y nombrar a otros docentes. "
+          + "¿Seguimos?")){
+        sel.value = "0";
+        return;
+      }
+      guardarMiembro(sel, email, {is_admin: docente},
+        function(m){ m.is_admin = docente; },
+        docente ? email + " ahora es docente. Si tiene la página abierta, le aparece la pestaña Admin."
+                : email + " vuelve a ser alumno.",
+        true);
+      return;
+    }
+
+    var team = sel.value || null;
+    guardarMiembro(sel, email, {team: team},
+      function(m){ m.team = team; },
+      team ? email + " juega en Equipo " + (TEAM_IDS.indexOf(team)+1)
+             + ". Si tiene la página abierta, se le aplica sin recargar."
+           : email + " vuelve a ver los seis equipos.",
+      false);
   });
 
   function applyCfg(){
